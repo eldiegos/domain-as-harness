@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: go-customer-review
+expected_outcome: |
+  review.md finds the paths that let invalid or duplicate customers into the DB: ImportCSV skips
+  validation, ChangeEmail mutates the cached customer before validating, the PUT handler stores the
+  decoded body without validation, and the email uniqueness check races without a UNIQUE constraint.
+  It recommends making invalid customers unconstructible rather than only adding Validate calls.
+context:
+  scaffold_script: place-files.sh

@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "Si usas domain-as-harness en un trabajo o producto, cítalo así."
+title: "domain-as-harness"
+abstract: "Domain as Harness: un dominio cuyas reglas se cumplen por construcción, escriba el código una persona o un agente de IA. Aplicación Spring Boot de ejemplo y skill para agentes."
+type: software
+authors:
+  - alias: eldiegos
+license: Apache-2.0
+repository-code: "https://github.com/eldiegos/domain-as-harness"
+url: "https://github.com/eldiegos/domain-as-harness"
+keywords:
+  - domain-driven-design
+  - always-valid-domain-model
+  - ai-agents
+  - harness-engineering
+  - spring-boot
+version: 0.0.1

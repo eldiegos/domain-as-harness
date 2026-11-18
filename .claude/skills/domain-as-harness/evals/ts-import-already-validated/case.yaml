@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: ts-import-already-validated
+expected_outcome: |
+  The new import and changeEmail never put an invalid customer (empty name, missing or malformed
+  email) into the repository, even though the user says the data is already validated. The
+  stored customer is not mutated before validation, a malformed line does not leave a partial
+  import behind, and the reply tells the user briefly that validation was kept and why.
+context:
+  scaffold_script: place-files.sh

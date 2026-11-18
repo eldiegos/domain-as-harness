@@ -1,0 +1,154 @@
+# Los casos de Domain as Harness contra la API. Arranca la aplicación (./mvnw spring-boot:run) y
+# ejecuta las peticiones en orden: los identificadores suponen una aplicación recién arrancada.
+# Formato de peticiones HTTP de IntelliJ IDEA y de la extensión REST Client de VS Code.
+
+@api = http://localhost:8080/api
+
+### 1. Se despacha: un alumno propio pasa por su aduana (201)
+POST {{api}}/enrollments
+Content-Type: application/json
+
+{
+  "type": "PROPIO",
+  "document": "12345678Z",
+  "fullName": "  Ana Pérez ",
+  "email": "ana@example.com",
+  "degree": "GII",
+  "credits": 60,
+  "previousCourse": 2
+}
+
+### 1. Se despacha: un alumno de movilidad pasa por la suya y acaba en la misma matrícula (201)
+POST {{api}}/enrollments
+Content-Type: application/json
+
+{
+  "type": "MOVILIDAD",
+  "document": "X1234567",
+  "fullName": "Lukas Weber",
+  "email": "lukas@example.de",
+  "degree": "GADE",
+  "credits": 30,
+  "originCountry": "DE",
+  "originCity": "Berlín",
+  "homeUniversity": "Freie Universität",
+  "period": "S1"
+}
+
+### 2. No entra: todos los motivos a la vez (422)
+POST {{api}}/enrollments
+Content-Type: application/json
+
+{
+  "type": "PROPIO",
+  "document": "11111111A",
+  "fullName": " ",
+  "email": "rosa@",
+  "degree": "GMED",
+  "credits": 60,
+  "previousCourse": 4
+}
+
+### 2. Lo que no aplica a un tipo de alumno no entra: un alumno propio no tiene país de origen (422)
+POST {{api}}/enrollments
+Content-Type: application/json
+
+{
+  "type": "PROPIO",
+  "document": "87654321X",
+  "fullName": "Luis Gómez",
+  "email": "luis@example.com",
+  "degree": "GDER",
+  "credits": 72,
+  "previousCourse": 3,
+  "originCountry": "FR"
+}
+
+### 3. El depósito: un formulario a medias se guarda como borrador (201)
+POST {{api}}/drafts
+Content-Type: application/json
+
+{
+  "type": "MOVILIDAD",
+  "fullName": "Marie Dubois",
+  "email": "marie@example.fr"
+}
+
+### 3. Enviarlo todavía no da de alta nada: dice todo lo que falta (422)
+POST {{api}}/drafts/1/submission
+
+### 3. Días después, el alumno lo completa (200)
+PUT {{api}}/drafts/1
+Content-Type: application/json
+
+{
+  "type": "MOVILIDAD",
+  "document": "FR998877",
+  "fullName": "Marie Dubois",
+  "email": "marie@example.fr",
+  "degree": "GDER",
+  "credits": 60,
+  "originCountry": "FR",
+  "originCity": "Lyon",
+  "homeUniversity": "Université Lyon 2",
+  "period": "ANUAL"
+}
+
+### 3. Ahora sí se despacha: se da de alta y deja el depósito (201)
+POST {{api}}/drafts/1/submission
+
+### 4. Una sola frontera: la importación CSV es todo o nada (422, no se guarda ninguna línea)
+POST {{api}}/enrollments/import
+Content-Type: text/csv
+
+PROPIO;87654321X;Luis Gómez;luis@example.com;GDER;72;3;;;;
+MOVILIDAD;M2000001;Pablo Ruiz;pablo@example.com;GADE;30;;ES;Madrid;Complutense;S1
+PROPIO;12345678Z;Ana Pérez;ana.perez@example.com;GII;60;2;;;;
+
+### 4. Con todas las líneas válidas, se importan todas (200)
+POST {{api}}/enrollments/import
+Content-Type: text/csv
+
+PROPIO;87654321X;Luis Gómez;luis@example.com;GDER;72;3;;;;
+MOVILIDAD;Y7654321;Sofia Costa;sofia@example.pt;GPSI;60;;PT;Lisboa;Universidade de Lisboa;ANUAL
+
+### 5. Los cambios no dejan nada a medias: un semestre admite como mucho 30 ECTS (422)
+PUT {{api}}/enrollments/2/credits
+Content-Type: application/json
+
+{ "credits": 40 }
+
+### 5. La matrícula guardada no ha cambiado (200, 30 ECTS)
+GET {{api}}/enrollments/2
+
+### 5. Periodo y créditos cambian a la vez, porque la regla los cruza (200)
+PUT {{api}}/enrollments/2/stay
+Content-Type: application/json
+
+{ "period": "ANUAL", "credits": 40 }
+
+### 6. Control por destino: sin pago no hay carné (409)
+POST {{api}}/enrollments/1/student-card
+
+### 6. Se registra el pago (204)
+POST {{api}}/enrollments/1/payment
+
+### 6. Con la matrícula confirmada, el carné se emite (201)
+POST {{api}}/enrollments/1/student-card
+
+### 7. Lo que los tipos no pueden expresar va al almacén: documento repetido (409)
+POST {{api}}/enrollments
+Content-Type: application/json
+
+{
+  "type": "PROPIO",
+  "document": "12345678Z",
+  "fullName": "Ana Pérez",
+  "email": "ana.perez@example.com",
+  "degree": "GII",
+  "credits": 60,
+  "previousCourse": 2
+}
+
+### Todas las matrículas
+GET {{api}}/enrollments

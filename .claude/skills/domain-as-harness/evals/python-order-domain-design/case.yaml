@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: python-order-domain-design
+expected_outcome: |
+  A domain module where drafts, submitted orders and paid orders are distinct immutable types. A
+  submitted order cannot exist with a missing email, no lines or a non-positive quantity. Submitting
+  a draft returns the reasons it cannot be submitted, paying accepts only a submitted order and
+  shipping only a paid one, so a type checker rejects a draft. The unittest tests pass.
