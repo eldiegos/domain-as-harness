@@ -6,5 +6,5 @@ package io.github.eldiegos.domainasharness.dominio;
  * Un {@code switch} sobre este tipo sin {@code default} deja de compilar si mañana se añade otra
  * variante y alguien olvida tratarla.
  */
-public sealed interface StudentOrigin permits HomeStudent, MobilityStudent {
-}
+public sealed interface StudentOrigin
+		permits HomeStudent, MobilityStudent { }

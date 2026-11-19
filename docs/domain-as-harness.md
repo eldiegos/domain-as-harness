@@ -11,8 +11,8 @@ que llega de fuera pasa una vez por la frontera, y allí le ocurre una de tres c
 
 - **Se despacha.** Cumple las reglas y se convierte en un tipo que circula por dentro sin más
   controles.
-- **Espera en el depósito.** Está incompleto pero tiene sentido para el negocio, y se guarda con
-  nombre propio.
+- **Espera en el depósito.** Está incompleto pero tiene sentido para el negocio, y se guarda aparte,
+  como borrador: un tipo propio que el código de negocio no acepta.
 - **No entra.** Ni una cosa ni la otra.
 
 ## Los casos
@@ -26,7 +26,8 @@ son relativas a `src/main/java/io/github/eldiegos/domainasharness/`.
 | **Puesto fronterizo** | Cada dato es un tipo que valida al construirse. `parse` es para lo que llega de fuera; el constructor, para el código de dentro. | `dominio/Email`, `Nif`, `Passport`, `FullName`… |
 | **Dos aduanas, un objeto** | Cada tipo de alumno es una variante de un tipo sellado: lo que no le aplica no se puede escribir. | `dominio/StudentOrigin`, `HomeStudent`, `MobilityStudent` |
 | **Reglas que cruzan campos** | Los créditos dependen del tipo de alumno y del periodo. No hay *setters*: cada cambio crea otra matrícula, que pasa otra vez por el constructor. | `dominio/Enrollment` |
-| **El depósito** | Lo incompleto se guarda como borrador, con nombre propio; solo se da de alta cuando cumple las reglas. | `dominio/EnrollmentDraft`, `almacen/DraftStore` |
+| **El depósito** | Lo incompleto se guarda como borrador, un tipo propio; solo se da de alta cuando cumple las reglas. | `dominio/EnrollmentDraft`, `almacen/DraftStore` |
+| **El depósito, en pequeño** | La solicitud de admisión: un `Draft` que guarda lo que haya y un `Submitted` que no puede estar incompleto. El código que evalúa las solicitudes recibe un `Submitted`. | `dominio/admision/AdmissionApplication` |
 | **Todos los motivos a la vez** | La frontera devuelve un resultado con todos los motivos del rechazo, no solo el primero. | `dominio/Result` |
 | **Control por destino** | El carné exige una matrícula confirmada, y solo la fábrica que comprueba el pago puede crearla. Es una clase con constructor privado, porque un *record* público no puede ocultar su constructor. | `dominio/ConfirmedEnrollment`, `StudentCard` |
 | **DTO en la frontera** | El JSON llega a un DTO de texto que no promete nada y se convierte una vez en un tipo del dominio. El dominio no sabe nada de Spring ni de Jackson. | `api/EnrollmentRequest`, `api/EnrollmentView` |
@@ -40,7 +41,8 @@ peticiones de [`casos.http`](casos.http).
 
 1. **Las reglas, en tipos:** el paquete `dominio`.
 2. **Pruebas de que lo inválido no entra por ningún camino:** altas, importación, cambios y
-   borradores, en `EnrollmentServiceTest`, y la frontera HTTP en `EnrollmentApiTest`.
+   borradores, en `EnrollmentServiceTest`, y la frontera HTTP en `EnrollmentApiTest`. Lo que el
+   compilador impide, como emitir el carné sin una matrícula confirmada, en `NoCompilaTest`.
 3. **Reglas automáticas contra los atajos:** `ArquitecturaTest` rechaza el cambio si una clase del
    dominio gana *setters*, un constructor público vacío, campos mutables o una dependencia de un
    *framework*, o si alguien usa la reflexión para saltarse un constructor. Sus mensajes dicen qué

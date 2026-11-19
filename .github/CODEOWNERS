@@ -5,6 +5,7 @@
 
 /src/main/java/io/github/eldiegos/domainasharness/dominio/       @eldiegos
 /src/test/java/io/github/eldiegos/domainasharness/ArquitecturaTest.java  @eldiegos
+/src/test/java/io/github/eldiegos/domainasharness/NoCompilaTest.java     @eldiegos
 /pom.xml                                                         @eldiegos
 /.github/                                                        @eldiegos
 /.claude/skills/                                                 @eldiegos

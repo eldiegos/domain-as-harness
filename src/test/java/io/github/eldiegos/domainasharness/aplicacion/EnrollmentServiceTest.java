@@ -88,6 +88,28 @@ class EnrollmentServiceTest {
 	}
 
 	@Test
+	@DisplayName("Un alumno de movilidad con curso previo no pasa: el dato no se descarta en silencio, es un motivo")
+	void movilidadConCursoPrevio() {
+		var result = EnrollmentDraft.fromCsvLine(
+			"MOVILIDAD;M2000009;Giulia Bianchi;giulia@example.it;GADE;30;2;IT;Roma;Sapienza;S1").submit();
+
+		assertEquals(List.of("un alumno de movilidad no tiene curso previo"), result.reasons());
+	}
+
+	@Test
+	@DisplayName("Las reglas de los créditos y del origen: 80 ECTS propio, 31 en un semestre y movilidad desde ES")
+	void reglasDeLaMatricula() {
+		assertEquals(List.of("un alumno propio se matricula de 30 a 78 ECTS"),
+			EnrollmentDraft.home("87654321X", "Luis Gomez", "luis@example.com", "GII", 80, 2).submit().reasons());
+		assertEquals(List.of("un alumno de movilidad con periodo S1 se matricula de 12 a 30 ECTS"),
+			EnrollmentDraft.mobility("FR112233", "Marie Dubois", "marie@example.fr", "GDER", 31,
+				"FR", "Lyon", "Universite Lyon 2", "S1").submit().reasons());
+		assertEquals(List.of("un alumno de movilidad internacional no puede venir de ES"),
+			EnrollmentDraft.mobility("M2000001", "Pablo Ruiz", "pablo@example.com", "GADE", 30,
+				"ES", "Madrid", "Complutense", "S1").submit().reasons());
+	}
+
+	@Test
 	@DisplayName("Los cambios inválidos fallan y la matrícula guardada no cambia")
 	void cambiosInvalidos() {
 		Map<Long, Enrollment> before = service.findAll();

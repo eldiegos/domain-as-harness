@@ -10,7 +10,9 @@ import java.util.Objects;
  * créditos según el tipo de alumno y el periodo. No hay setters: cada cambio crea otra matrícula,
  * que pasa otra vez por el constructor.
  */
-public record Enrollment(StudentOrigin origin, FullName fullName, Email email, Degree degree, int credits) {
+public record Enrollment(StudentOrigin origin,
+		FullName fullName, Email email, Degree degree,
+		int credits) {
 
 	public Enrollment {
 		Objects.requireNonNull(origin, "origin");
@@ -20,14 +22,18 @@ public record Enrollment(StudentOrigin origin, FullName fullName, Email email, D
 		switch (origin) {
 			case HomeStudent h -> {
 				if (credits < 30 || credits > 78) {
-					throw new IllegalArgumentException("un alumno propio se matricula de 30 a 78 ECTS");
+					throw new IllegalArgumentException(
+						"un alumno propio se matricula"
+						+ " de 30 a 78 ECTS");
 				}
 			}
 			case MobilityStudent m -> {
-				int max = m.period().maxCredits();
+				int max = m.period().maxCredits(); // 30 o 60
 				if (credits < 12 || credits > max) {
 					throw new IllegalArgumentException(
-						"un alumno de movilidad con periodo " + m.period() + " se matricula de 12 a " + max + " ECTS");
+						"un alumno de movilidad con periodo "
+						+ m.period() + " se matricula de 12 a "
+						+ max + " ECTS");
 				}
 			}
 		}

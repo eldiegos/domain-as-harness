@@ -9,7 +9,7 @@ la *skill* para que tus agentes escriban código nuevo con la misma regla.
 > ships the `domain-as-harness` agent skill so your AI agents can write new code the same way.
 
 **La aduana del dominio:** un objeto de dominio o es válido o no existe. Todo dato que llega de fuera
-pasa una vez por la frontera, y allí **se despacha**, **espera en el depósito con su nombre** o **no
+pasa una vez por la frontera, y allí **se despacha**, **espera en el depósito como borrador** o **no
 entra**.
 
 ## Requisitos
@@ -63,6 +63,24 @@ Las pruebas, incluidas las de arquitectura que protegen el dominio:
 ./mvnw verify
 ```
 
+## Los ejemplos del artículo
+
+Los ejemplos de código del artículo que presenta *Domain as Harness* están aquí tal cual (los
+extractos solo omiten líneas), y cada afirmación tiene su prueba:
+
+| Ejemplo | Dónde está | Qué comprueba la prueba |
+|---|---|---|
+| El puesto fronterizo: `Email` | `dominio/Email` | `EmailTest`: `parse` normaliza o devuelve vacío; el constructor lanza; la reflexión no cambia el campo |
+| El depósito: la solicitud de admisión (`Draft`, `Submitted`) | `dominio/admision/AdmissionApplication` | `AdmissionApplicationTest`: el borrador guarda lo que haya; la solicitud enviada no puede estar incompleta. `NoCompilaTest`: pasar un `Draft` a quien espera un `Submitted` no compila |
+| Dos aduanas: `StudentOrigin`, `HomeStudent`, `MobilityStudent` | `dominio/` | `EnrollmentServiceTest`: cada alumno entra como su variante; un alumno de movilidad no puede venir de ES; uno con curso previo se rechaza con ese motivo |
+| La regla de los créditos: `Enrollment` | `dominio/Enrollment` | `EnrollmentServiceTest`: 80 ECTS a un alumno propio o 31 en un semestre se rechazan. `NoCompilaTest`: con una tercera variante, el `switch` sin `default` no compila |
+| La frontera: `EnrollmentDraft.submit()` | `dominio/EnrollmentDraft` | `EnrollmentServiceTest`: el campo `type` elige la aduana y el rechazo trae todos los motivos |
+| Control por destino: el carné exige `ConfirmedEnrollment` | `dominio/ConfirmedEnrollment`, `StudentCard` | `EnrollmentServiceTest` y `EnrollmentApiTest`: sin pago no hay carné. `NoCompilaTest`: `StudentCard.issue(enrollment)` no compila, el constructor privado tampoco, y un *record* público no puede ocultar el suyo |
+| Lo que los tipos no expresan: el documento único | `almacen/EnrollmentStore` | `EnrollmentServiceTest` y `EnrollmentApiTest`: un documento, una matrícula |
+
+`NoCompilaTest` compila trozos de código contra el dominio y comprueba el error de `javac`: necesita
+un JDK, no basta un JRE.
+
 ## Documentación
 
 - [Domain as Harness en esta aplicación](docs/domain-as-harness.md): cada caso, dónde está en el
@@ -81,6 +99,9 @@ src/main/java/io/github/eldiegos/domainasharness/
   pagos/         un sistema de pagos en memoria
 src/test/java/io/github/eldiegos/domainasharness/
   ArquitecturaTest.java              nadie desmonta la aduana sin que se note
+  NoCompilaTest.java                 lo que no compila: el compilador hace cumplir las reglas
+  dominio/EmailTest                  el puesto fronterizo
+  dominio/admision/...Test           el depósito, en pequeño: la solicitud de admisión
   aplicacion/EnrollmentServiceTest   lo inválido no entra por ningún camino
   api/EnrollmentApiTest              la frontera HTTP
 .claude/skills/domain-as-harness/    la skill para agentes de IA
