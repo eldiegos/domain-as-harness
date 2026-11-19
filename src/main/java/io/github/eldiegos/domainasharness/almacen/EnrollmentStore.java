@@ -1,6 +1,7 @@
 package io.github.eldiegos.domainasharness.almacen;
 
 import io.github.eldiegos.domainasharness.dominio.Enrollment;
+import io.github.eldiegos.domainasharness.dominio.EnrollmentId;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -29,6 +30,11 @@ public class EnrollmentStore {
 	private final Map<String, Long> idByDocument = new HashMap<>();
 	private long nextId = 1;
 
+	/** La identidad de la próxima matrícula. Como una secuencia, un alta rechazada deja un hueco. */
+	public synchronized EnrollmentId nextId() {
+		return new EnrollmentId(nextId++);
+	}
+
 	public synchronized long insert(Enrollment e) {
 		return insertAll(List.of(e)).get(0);
 	}
@@ -40,10 +46,13 @@ public class EnrollmentStore {
 			if (idByDocument.containsKey(e.document()) || !seen.add(e.document())) {
 				throw new DuplicateDocumentException(e.document());
 			}
+			if (byId.containsKey(e.id().value()) || e.id().value() >= nextId) {
+				throw new IllegalArgumentException("identificador de matrícula no emitido por el almacén: " + e.id().value());
+			}
 		}
 		List<Long> ids = new ArrayList<>();
 		for (Enrollment e : enrollments) {
-			long id = nextId++;
+			long id = e.id().value();
 			byId.put(id, e);
 			idByDocument.put(e.document(), id);
 			ids.add(id);
@@ -64,6 +73,9 @@ public class EnrollmentStore {
 		Enrollment current = byId.get(id);
 		if (current == null) {
 			throw new NoSuchElementException("matrícula " + id);
+		}
+		if (updated.id().value() != id) {
+			throw new IllegalArgumentException("una matrícula no cambia de identificador");
 		}
 		if (!current.document().equals(updated.document())) {
 			throw new IllegalArgumentException("el documento de una matrícula no cambia");

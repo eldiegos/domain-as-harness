@@ -3,8 +3,9 @@ package io.github.eldiegos.domainasharness.dominio;
 import java.util.Objects;
 
 /** El carné universitario: solo se emite para una matrícula confirmada. */
-public record StudentCard(long enrollmentId, String document, FullName holder, Degree degree) {
+public record StudentCard(EnrollmentId enrollmentId, String document, FullName holder, Degree degree) {
 	public StudentCard {
+		Objects.requireNonNull(enrollmentId, "enrollmentId");
 		Objects.requireNonNull(document, "document");
 		Objects.requireNonNull(holder, "holder");
 		Objects.requireNonNull(degree, "degree");

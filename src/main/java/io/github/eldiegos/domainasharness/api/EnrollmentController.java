@@ -47,7 +47,7 @@ public class EnrollmentController {
 
 	public record StudentCardView(long enrollmentId, String document, String holder, String degree) {
 		static StudentCardView of(StudentCard c) {
-			return new StudentCardView(c.enrollmentId(), c.document(), c.holder().value(), c.degree().name());
+			return new StudentCardView(c.enrollmentId().value(), c.document(), c.holder().value(), c.degree().name());
 		}
 	}
 

@@ -25,7 +25,8 @@ son relativas a `src/main/java/io/github/eldiegos/domainasharness/`.
 |---|---|---|
 | **Puesto fronterizo** | Cada dato es un tipo que valida al construirse. `parse` es para lo que llega de fuera; el constructor, para el código de dentro. | `dominio/Email`, `Nif`, `Passport`, `FullName`… |
 | **Dos aduanas, un objeto** | Cada tipo de alumno es una variante de un tipo sellado: lo que no le aplica no se puede escribir. | `dominio/StudentOrigin`, `HomeStudent`, `MobilityStudent` |
-| **Reglas que cruzan campos** | Los créditos dependen del tipo de alumno y del periodo. No hay *setters*: cada cambio crea otra matrícula, que pasa otra vez por el constructor. | `dominio/Enrollment` |
+| **Reglas que cruzan campos** | Los créditos dependen del tipo de alumno y del periodo. No hay *setters*: cada cambio crea otro objeto, que pasa otra vez por el constructor. | `dominio/Enrollment` |
+| **Una entidad con identidad** | La matrícula se reconoce por su `EnrollmentId`, no por sus datos: un cambio crea otro objeto con el mismo identificador, y los dos son la misma matrícula. El identificador lo da el almacén (`nextId()`) antes de cruzar la frontera, como una secuencia. | `dominio/Enrollment`, `EnrollmentId`, `almacen/EnrollmentStore` |
 | **El depósito** | Lo incompleto se guarda como borrador, un tipo propio; solo se da de alta cuando cumple las reglas. | `dominio/EnrollmentDraft`, `almacen/DraftStore` |
 | **El depósito, en pequeño** | La solicitud de admisión: un `Draft` que guarda lo que haya y un `Submitted` que no puede estar incompleto. El código que evalúa las solicitudes recibe un `Submitted`. | `dominio/admision/AdmissionApplication` |
 | **Todos los motivos a la vez** | La frontera devuelve un resultado con todos los motivos del rechazo, no solo el primero. | `dominio/Result` |

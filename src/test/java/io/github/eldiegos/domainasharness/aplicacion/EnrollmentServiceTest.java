@@ -5,6 +5,7 @@ import io.github.eldiegos.domainasharness.almacen.DuplicateDocumentException;
 import io.github.eldiegos.domainasharness.almacen.EnrollmentStore;
 import io.github.eldiegos.domainasharness.dominio.Enrollment;
 import io.github.eldiegos.domainasharness.dominio.EnrollmentDraft;
+import io.github.eldiegos.domainasharness.dominio.EnrollmentId;
 import io.github.eldiegos.domainasharness.dominio.HomeStudent;
 import io.github.eldiegos.domainasharness.dominio.MobilityStudent;
 import io.github.eldiegos.domainasharness.dominio.Result;
@@ -27,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /** Lo inválido no entra por ningún camino: altas, importación, cambios y borradores. */
 @DisplayName("Casos de uso: lo inválido no entra por ningún camino")
 class EnrollmentServiceTest {
+
+	/** Un identificador cualquiera para comprobar la frontera sin pasar por el almacén. */
+	private static final EnrollmentId ID = new EnrollmentId(99);
 
 	private PaymentsRegistry payments;
 	private EnrollmentService service;
@@ -69,7 +73,7 @@ class EnrollmentServiceTest {
 	})
 	@DisplayName("Ninguna línea inválida pasa la frontera")
 	void ningunaLineaInvalidaPasa(String line) {
-		assertInstanceOf(Result.Rejected.class, EnrollmentDraft.fromCsvLine(line).submit());
+		assertInstanceOf(Result.Rejected.class, EnrollmentDraft.fromCsvLine(line).submit(ID));
 	}
 
 	@Test
@@ -91,7 +95,7 @@ class EnrollmentServiceTest {
 	@DisplayName("Un alumno de movilidad con curso previo no pasa: el dato no se descarta en silencio, es un motivo")
 	void movilidadConCursoPrevio() {
 		var result = EnrollmentDraft.fromCsvLine(
-			"MOVILIDAD;M2000009;Giulia Bianchi;giulia@example.it;GADE;30;2;IT;Roma;Sapienza;S1").submit();
+			"MOVILIDAD;M2000009;Giulia Bianchi;giulia@example.it;GADE;30;2;IT;Roma;Sapienza;S1").submit(ID);
 
 		assertEquals(List.of("un alumno de movilidad no tiene curso previo"), result.reasons());
 	}
@@ -100,13 +104,13 @@ class EnrollmentServiceTest {
 	@DisplayName("Las reglas de los créditos y del origen: 80 ECTS propio, 31 en un semestre y movilidad desde ES")
 	void reglasDeLaMatricula() {
 		assertEquals(List.of("un alumno propio se matricula de 30 a 78 ECTS"),
-			EnrollmentDraft.home("87654321X", "Luis Gomez", "luis@example.com", "GII", 80, 2).submit().reasons());
+			EnrollmentDraft.home("87654321X", "Luis Gomez", "luis@example.com", "GII", 80, 2).submit(ID).reasons());
 		assertEquals(List.of("un alumno de movilidad con periodo S1 se matricula de 12 a 30 ECTS"),
 			EnrollmentDraft.mobility("FR112233", "Marie Dubois", "marie@example.fr", "GDER", 31,
-				"FR", "Lyon", "Universite Lyon 2", "S1").submit().reasons());
+				"FR", "Lyon", "Universite Lyon 2", "S1").submit(ID).reasons());
 		assertEquals(List.of("un alumno de movilidad internacional no puede venir de ES"),
 			EnrollmentDraft.mobility("M2000001", "Pablo Ruiz", "pablo@example.com", "GADE", 30,
-				"ES", "Madrid", "Complutense", "S1").submit().reasons());
+				"ES", "Madrid", "Complutense", "S1").submit(ID).reasons());
 	}
 
 	@Test
@@ -125,7 +129,7 @@ class EnrollmentServiceTest {
 			fails(() -> service.changeOrigin(home, "FR", "Paris", "Sorbonne")),
 			fails(() -> service.changeStay(mobility, "S1", 40)));
 
-		assertEquals(before, service.findAll());
+		assertEquals(datos(before), datos(service.findAll()));
 	}
 
 	@Test
@@ -173,6 +177,23 @@ class EnrollmentServiceTest {
 		payments.markPaid(home);
 
 		assertEquals("12345678Z", service.issueStudentCard(home).document());
+	}
+
+	@Test
+	@DisplayName("Una entidad: cada cambio crea otro objeto, pero es la misma matrícula")
+	void mismaMatricula() {
+		Enrollment antes = service.find(home);
+		Enrollment despues = service.changeCredits(home, 72);
+
+		assertEquals(antes, despues);
+		assertEquals(antes.id(), despues.id());
+		assertEquals(60, antes.credits());
+		assertEquals(72, despues.credits());
+	}
+
+	/** Los datos de cada matrícula, no solo su identidad: para ver que nada ha cambiado. */
+	private static List<String> datos(Map<Long, Enrollment> enrollments) {
+		return enrollments.values().stream().map(Enrollment::toString).toList();
 	}
 
 	private static Executable fails(Executable change) {

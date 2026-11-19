@@ -67,7 +67,7 @@ class NoCompilaTest {
 			package prueba;
 			import io.github.eldiegos.domainasharness.dominio.*;
 			class Falsa {
-				ConfirmedEnrollment confirmar(Enrollment e) { return new ConfirmedEnrollment(1, e); }
+				ConfirmedEnrollment confirmar(Enrollment e) { return new ConfirmedEnrollment(e); }
 			}
 			""")));
 	}

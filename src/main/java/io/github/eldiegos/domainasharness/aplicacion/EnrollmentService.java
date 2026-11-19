@@ -9,6 +9,7 @@ import io.github.eldiegos.domainasharness.dominio.Degree;
 import io.github.eldiegos.domainasharness.dominio.Email;
 import io.github.eldiegos.domainasharness.dominio.Enrollment;
 import io.github.eldiegos.domainasharness.dominio.EnrollmentDraft;
+import io.github.eldiegos.domainasharness.dominio.EnrollmentId;
 import io.github.eldiegos.domainasharness.dominio.Payments;
 import io.github.eldiegos.domainasharness.dominio.Period;
 import io.github.eldiegos.domainasharness.dominio.PreviousCourse;
@@ -44,7 +45,7 @@ public class EnrollmentService {
 
 	/** Da de alta una matrícula si pasa la frontera; si no, lanza {@link RejectedException} con todos los motivos. */
 	public long enroll(EnrollmentDraft draft) {
-		return enrollments.insert(admit(draft));
+		return enrollments.insert(admit(draft, enrollments.nextId()));
 	}
 
 	/** Parsea el fichero entero antes de guardar: si una línea no pasa la frontera, no se guarda ninguna. */
@@ -57,7 +58,7 @@ public class EnrollmentService {
 			String prefix = "línea " + (i + 1) + ": ";
 			Result<Enrollment> result;
 			try {
-				result = EnrollmentDraft.fromCsvLine(lines[i]).submit();
+				result = EnrollmentDraft.fromCsvLine(lines[i]).submit(enrollments.nextId());
 			} catch (IllegalArgumentException e) {
 				reasons.add(prefix + e.getMessage());
 				continue;
@@ -137,7 +138,7 @@ public class EnrollmentService {
 	 * queda en el depósito y se devuelven los motivos.
 	 */
 	public synchronized Result<Long> submitDraft(long draftId) {
-		return switch (findDraft(draftId).submit()) {
+		return switch (findDraft(draftId).submit(enrollments.nextId())) {
 			case Result.Accepted<Enrollment> a -> {
 				long id = enrollments.insert(a.value());
 				drafts.remove(draftId);
@@ -151,14 +152,14 @@ public class EnrollmentService {
 
 	/** El carné exige una matrícula confirmada, y solo el pago la confirma. */
 	public StudentCard issueStudentCard(long id) {
-		return ConfirmedEnrollment.confirm(id, find(id), payments)
+		return ConfirmedEnrollment.confirm(find(id), payments)
 			.map(StudentCard::issue)
 			.orElseThrow(() -> new IllegalStateException(
 				"la matrícula " + id + " no está pagada: el carné exige una matrícula confirmada"));
 	}
 
-	private static Enrollment admit(EnrollmentDraft draft) {
-		return switch (draft.submit()) {
+	private static Enrollment admit(EnrollmentDraft draft, EnrollmentId id) {
+		return switch (draft.submit(id)) {
 			case Result.Accepted<Enrollment> a -> a.value();
 			case Result.Rejected<Enrollment> r -> throw new RejectedException(r.reasons());
 		};

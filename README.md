@@ -70,11 +70,12 @@ extractos solo omiten líneas), y cada afirmación tiene su prueba:
 
 | Ejemplo | Dónde está | Qué comprueba la prueba |
 |---|---|---|
-| El puesto fronterizo: `Email` | `dominio/Email` | `EmailTest`: `parse` normaliza o devuelve vacío; el constructor lanza; la reflexión no cambia el campo |
+| El puesto fronterizo: `Email` | `dominio/Email` | `EmailTest`: `parse` normaliza o devuelve vacío; el constructor lanza; la reflexión no cambia el campo; Java (con un *record* serializable) y Jackson deserializan con el constructor |
 | El depósito: la solicitud de admisión (`Draft`, `Submitted`) | `dominio/admision/AdmissionApplication` | `AdmissionApplicationTest`: el borrador guarda lo que haya; la solicitud enviada no puede estar incompleta. `NoCompilaTest`: pasar un `Draft` a quien espera un `Submitted` no compila |
 | Dos aduanas: `StudentOrigin`, `HomeStudent`, `MobilityStudent` | `dominio/` | `EnrollmentServiceTest`: cada alumno entra como su variante; un alumno de movilidad no puede venir de ES; uno con curso previo se rechaza con ese motivo |
 | La regla de los créditos: `Enrollment` | `dominio/Enrollment` | `EnrollmentServiceTest`: 80 ECTS a un alumno propio o 31 en un semestre se rechazan. `NoCompilaTest`: con una tercera variante, el `switch` sin `default` no compila |
-| La frontera: `EnrollmentDraft.submit()` | `dominio/EnrollmentDraft` | `EnrollmentServiceTest`: el campo `type` elige la aduana y el rechazo trae todos los motivos |
+| La matrícula es una entidad: `EnrollmentId` | `dominio/EnrollmentId`, `Enrollment` | `EnrollmentServiceTest`: un cambio crea otro objeto con el mismo identificador, y es la misma matrícula |
+| La frontera: `EnrollmentDraft.submit(id)` | `dominio/EnrollmentDraft` | `EnrollmentServiceTest`: el campo `type` elige la aduana y el rechazo trae todos los motivos |
 | Control por destino: el carné exige `ConfirmedEnrollment` | `dominio/ConfirmedEnrollment`, `StudentCard` | `EnrollmentServiceTest` y `EnrollmentApiTest`: sin pago no hay carné. `NoCompilaTest`: `StudentCard.issue(enrollment)` no compila, el constructor privado tampoco, y un *record* público no puede ocultar el suyo |
 | Lo que los tipos no expresan: el documento único | `almacen/EnrollmentStore` | `EnrollmentServiceTest` y `EnrollmentApiTest`: un documento, una matrícula |
 

@@ -8,7 +8,8 @@ Instrucciones para agentes de IA que trabajen en este repositorio.
   al construirse: un objeto de dominio o es válido o no existe. Las reglas de negocio están en
   `docs/reglas-de-negocio.md`.
 - Lo que llega de fuera (JSON, CSV) entra por un DTO del paquete `api` y se convierte una vez en un
-  tipo del dominio con `EnrollmentDraft.submit()` o con la función `parse` del tipo. Dentro no se
+  tipo del dominio con `EnrollmentDraft.submit(id)` o con la función `parse` del tipo. El
+  identificador lo da `EnrollmentStore.nextId()`. Dentro no se
   repiten validaciones.
 - Lo incompleto que tiene sentido para el negocio es otro tipo (`EnrollmentDraft`), no una matrícula
   a medias.

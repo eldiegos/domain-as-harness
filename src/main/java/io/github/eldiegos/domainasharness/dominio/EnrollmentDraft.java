@@ -1,11 +1,13 @@
 package io.github.eldiegos.domainasharness.dominio;
 
+import java.util.Objects;
+
 /**
  * El depósito: una matrícula tal como la escribió el alumno, completa o no. Se puede guardar durante
  * días; lo que no puede es llegar al código que trabaja con matrículas, porque ese código recibe una
  * {@link Enrollment}.
  *
- * <p>{@link #submit()} es el puesto fronterizo de las dos aduanas: según el tipo de alumno, pasa por
+ * <p>{@link #submit(EnrollmentId)} es el puesto fronterizo de las dos aduanas: según el tipo de alumno, pasa por
  * la del alumno propio o por la del alumno de movilidad, y devuelve la matrícula o todos los motivos
  * del rechazo. Todas las entradas (API, CSV, formulario) llegan aquí: el dato se comprueba una vez.
  */
@@ -41,7 +43,9 @@ public record EnrollmentDraft(String type, String document, String fullName, Str
 		return new EnrollmentDraft(f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10]);
 	}
 
-	public Result<Enrollment> submit() {
+	/** El identificador lo da el almacén: la matrícula, si pasa, nace con su identidad. */
+	public Result<Enrollment> submit(EnrollmentId id) {
+		Objects.requireNonNull(id, "id");
 		Reasons r = new Reasons();
 		FullName name = r.attempt(() -> new FullName(fullName));
 		Email mail = r.attempt(() -> Email.parse(email)
@@ -59,7 +63,7 @@ public record EnrollmentDraft(String type, String document, String fullName, Str
 		if (!r.isEmpty()) {
 			return Result.rejected(r.list());
 		}
-		Enrollment enrollment = r.attempt(() -> new Enrollment(origin, name, mail, deg, ects));
+		Enrollment enrollment = r.attempt(() -> new Enrollment(id, origin, name, mail, deg, ects));
 		return enrollment != null ? Result.accepted(enrollment) : Result.rejected(r.list());
 	}
 

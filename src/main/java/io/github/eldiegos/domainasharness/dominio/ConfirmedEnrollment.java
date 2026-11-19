@@ -17,31 +17,29 @@ import java.util.Optional;
  * pago, este objeto sigue existiendo. Eso se protege con transacciones, no con tipos.
  */
 public final class ConfirmedEnrollment {
-	private final long id;
 	private final Enrollment enrollment;
 
-	private ConfirmedEnrollment(long id, Enrollment enrollment) {
-		this.id = id;
+	private ConfirmedEnrollment(Enrollment enrollment) {
 		this.enrollment = enrollment;
 	}
 
-	public static Optional<ConfirmedEnrollment> confirm(long id, Enrollment enrollment, Payments payments) {
+	public static Optional<ConfirmedEnrollment> confirm(Enrollment enrollment, Payments payments) {
 		Objects.requireNonNull(enrollment, "enrollment");
 		Objects.requireNonNull(payments, "payments");
-		return payments.isPaid(id)
-			? Optional.of(new ConfirmedEnrollment(id, enrollment))
+		return payments.isPaid(enrollment.id())
+			? Optional.of(new ConfirmedEnrollment(enrollment))
 			: Optional.empty();
 	}
 
-	public long id() { return id; }
+	public EnrollmentId id() { return enrollment.id(); }
 
 	public Enrollment enrollment() { return enrollment; }
 
 	@Override public boolean equals(Object o) {
-		return o instanceof ConfirmedEnrollment c && c.id == id && c.enrollment.equals(enrollment);
+		return o instanceof ConfirmedEnrollment c && c.enrollment.equals(enrollment);
 	}
 
-	@Override public int hashCode() { return Objects.hash(id, enrollment); }
+	@Override public int hashCode() { return enrollment.hashCode(); }
 
-	@Override public String toString() { return "ConfirmedEnrollment[id=" + id + ", " + enrollment + "]"; }
+	@Override public String toString() { return "ConfirmedEnrollment[" + enrollment + "]"; }
 }

@@ -1,5 +1,6 @@
 package io.github.eldiegos.domainasharness.pagos;
 
+import io.github.eldiegos.domainasharness.dominio.EnrollmentId;
 import io.github.eldiegos.domainasharness.dominio.Payments;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,7 @@ public class PaymentsRegistry implements Payments {
 	}
 
 	@Override
-	public synchronized boolean isPaid(long enrollmentId) {
-		return paid.contains(enrollmentId);
+	public synchronized boolean isPaid(EnrollmentId enrollment) {
+		return paid.contains(enrollment.value());
 	}
 }
