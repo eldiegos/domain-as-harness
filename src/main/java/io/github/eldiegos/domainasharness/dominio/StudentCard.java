@@ -12,7 +12,8 @@ public record StudentCard(EnrollmentId enrollmentId, String document, FullName h
 	}
 
 	/** El destino «emitir el carné» exige su tipo: pasarle una {@link Enrollment} sin pagar no compila. */
-	public static StudentCard issue(ConfirmedEnrollment confirmed) {
+	public static StudentCard issue(
+			ConfirmedEnrollment confirmed) {
 		Enrollment e = confirmed.enrollment();
 		return new StudentCard(confirmed.id(), e.document(), e.fullName(), e.degree());
 	}

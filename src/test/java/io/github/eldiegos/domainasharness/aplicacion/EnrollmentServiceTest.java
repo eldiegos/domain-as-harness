@@ -73,7 +73,8 @@ class EnrollmentServiceTest {
 	})
 	@DisplayName("Ninguna línea inválida pasa la frontera")
 	void ningunaLineaInvalidaPasa(String line) {
-		assertInstanceOf(Result.Rejected.class, EnrollmentDraft.fromCsvLine(line).submit(ID));
+		assertInstanceOf(Result.Rejected.class,
+			EnrollmentDraft.fromCsvLine(line).submit(ID));
 	}
 
 	@Test

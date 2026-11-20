@@ -38,8 +38,10 @@ class ArquitecturaTest {
 			.that().areDeclaredInClassesThat().resideInAPackage(DOMINIO)
 			.and().arePublic().and().areNotStatic()
 			.should().haveNameMatching("set[A-Z].*")
-			.because("un objeto de dominio no cambia después de construirse. Para cambiarlo, añade un método "
-				+ "withX(...) que devuelva otro objeto creado con el constructor, que valida");
+			.because("un objeto de dominio no cambia después de "
+				+ "construirse. Para cambiarlo, añade un método "
+				+ "withX(...) que devuelva otro objeto creado con "
+				+ "el constructor, que valida");
 		rule.check(APLICACION);
 	}
 
