@@ -136,6 +136,8 @@ class EnrollmentServiceTest {
 	@Test
 	@DisplayName("La importación es todo o nada y dice qué falla en cada línea")
 	void importacionTodoONada() {
+		// toString, no equals: equals solo compara el id.
+		var antes = service.findAll().toString();
 		var e = assertThrows(RejectedException.class,
 			() -> service.importCsv("""
 				PROPIO;87654321X;Luis Gomez;luis@example.com;GDER;72;3;;;;
@@ -147,8 +149,8 @@ class EnrollmentServiceTest {
 			"línea 2: se esperaban 11 campos y hay 2",
 			"línea 3: ya hay una matrícula con el documento 12345678Z"),
 			e.reasons());
-		// Ninguna línea se guarda: siguen las dos matrículas de antes.
-		assertEquals(2, service.findAll().size());
+		// Nada cambia: ni entra la línea válida ni se tocan las de antes.
+		assertEquals(antes, service.findAll().toString());
 	}
 
 	@Test
