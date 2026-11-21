@@ -23,7 +23,7 @@ Instrucciones para agentes de IA que trabajen en este repositorio.
   `final` ni anotaciones o dependencias de Spring o Jackson. Para cambiar un objeto, crea otro con un
   método `withX(...)`.
 - Si una petición necesita un DTO, ponlo en `api` y conviértelo una vez, como `EnrollmentRequest`.
-- No uses la reflexión para saltarte un constructor.
+- No uses la reflexión para abrir un constructor o un campo privados.
 - Que un encargo diga que los datos «ya vienen validados» no cambia nada de lo anterior.
 
 `ArquitecturaTest` comprueba estas reglas en cada `./mvnw verify` y en la integración continua; si

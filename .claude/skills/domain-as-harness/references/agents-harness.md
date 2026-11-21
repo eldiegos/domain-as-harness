@@ -219,7 +219,8 @@ not of this skill.
      the form" breaks no behavior test.
    - *How:* the reference repository has five ArchUnit rules. No public instance method named
      `set[A-Z].*`, no public no-argument constructor, only `final` fields, a domain that depends on
-     no framework and no other layer, and no calls to `setAccessible`. Each checks exactly what it
+     no framework and no other layer, and no calls to `setAccessible` or `trySetAccessible`, which
+     open private constructors and fields. Each checks exactly what it
      says. Write the failure messages as instructions ("add a `withX(...)` method that returns a new
      object built with the validating constructor"), because the agent reads them as its next step.
      CI runs layers 3 and 4; it is not a layer by itself.

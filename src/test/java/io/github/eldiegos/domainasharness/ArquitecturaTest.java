@@ -8,7 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
-import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
+import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameMatching;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noConstructors;
@@ -18,7 +18,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
  * La parte del harness que protege al propio dominio. Se ejecuta en cada {@code ./mvnw verify} y en la
  * integración continua, y rechaza el cambio si una clase del paquete {@code dominio} gana setters, un
  * constructor público vacío, campos mutables o dependencias de un framework, o si alguien usa la
- * reflexión para saltarse un constructor. Nadie desmonta la aduana sin que se note.
+ * reflexión para abrir un constructor o un campo privados. Nadie desmonta la aduana sin que se note.
  *
  * <p>Los mensajes dicen qué usar en su lugar: un agente de IA lee ese error como su siguiente instrucción.
  */
@@ -83,12 +83,13 @@ class ArquitecturaTest {
 	}
 
 	@Test
-	@DisplayName("Nadie usa la reflexión para saltarse un constructor")
+	@DisplayName("Nadie usa la reflexión para abrir un constructor o un campo privados")
 	void sinReflexion() {
 		ArchRule rule = noClasses()
 			.that().resideInAPackage("io.github.eldiegos.domainasharness..")
-			.should().callMethodWhere(target(name("setAccessible")))
-			.because("la reflexión salta la aduana. Construye los objetos con su constructor o su función parse");
+			.should().callMethodWhere(target(nameMatching("setAccessible|trySetAccessible")))
+			.because("la reflexión abre constructores y campos privados y salta la aduana. Construye los objetos"
+				+ " con su constructor, su fábrica o su función parse");
 		rule.check(APLICACION);
 	}
 }

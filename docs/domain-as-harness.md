@@ -48,8 +48,8 @@ peticiones de [`casos.http`](casos.http).
    compilador impide, como emitir el carné sin una matrícula confirmada, en `NoCompilaTest`.
 4. **Reglas automáticas contra los atajos:** `ArquitecturaTest` rechaza el cambio si una clase del
    dominio gana *setters*, un constructor público vacío, campos mutables o una dependencia de un
-   *framework*, o si alguien usa la reflexión para saltarse un constructor. Sus mensajes dicen qué
-   usar en su lugar: un agente lee ese error como su siguiente instrucción.
+   *framework*, o si alguien usa la reflexión para abrir un constructor o un campo privados. Sus
+   mensajes dicen qué usar en su lugar: un agente lee ese error como su siguiente instrucción.
 5. **Protección del propio dominio:** la integración continua (`.github/workflows/ci.yml`) ejecuta
    todo con cada cambio, y `.github/CODEOWNERS` pide la revisión de los propietarios para el dominio,
    las pruebas de arquitectura, el `pom.xml`, la integración continua, el `AGENTS.md` y la *skill*.
