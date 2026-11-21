@@ -181,7 +181,8 @@ with two correct but different reference architectures.
 
 ## The six layers in detail
 
-The layers are a defense hierarchy, not a scale of strength: each one covers what the others
+This is defense in depth applied to the domain's rules: no layer is enough on its own. The layers
+are a defense hierarchy, not a scale of strength: each one covers what the others
 cannot reach. They are ordered by when they act and by how much they depend on someone's will.
 Layers 1 and 2 act at run time, always. Layers 3, 4 and 5 act when the code changes, and 5 also
 depends on someone looking. Layer 6 works only if the agent chooses to follow it. The scope is the
@@ -219,7 +220,7 @@ not of this skill.
      the form" breaks no behavior test.
    - *How:* the reference repository has five ArchUnit rules. No public instance method named
      `set[A-Z].*`, no public no-argument constructor, only `final` fields, a domain that depends on
-     no framework and no other layer, and no calls to `setAccessible` or `trySetAccessible`, which
+     no framework and nothing else in the application, and no calls to `setAccessible` or `trySetAccessible`, which
      open private constructors and fields. Each checks exactly what it
      says. Write the failure messages as instructions ("add a `withX(...)` method that returns a new
      object built with the validating constructor"), because the agent reads them as its next step.

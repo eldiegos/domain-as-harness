@@ -56,9 +56,10 @@ agents.
 ## Six layers
 
 Domain customs is the first layer. It protects the data, not itself: an agent that can edit the
-domain types can delete their checks. Six layers together keep the rules in place. They are not a
-scale of strength, because each covers what the others cannot reach. They are a defense hierarchy,
-ordered by when each layer acts and by how much it depends on someone's will:
+domain types can delete their checks. Six layers together keep the rules in place: defense in depth
+applied to the domain's rules, where no layer is enough on its own. They are not a scale of
+strength, because each covers what the others cannot reach. They are a defense hierarchy, ordered
+by when each layer acts and by how much it depends on someone's will:
 
 | # | Layer | Acts | What you add | Where it ends |
 |---|---|---|---|---|
@@ -162,8 +163,8 @@ A change is finished when the layers it touches are up to date. In the same chan
     transaction, so cover it with an integration test against that database.
 - **Domain package, type or a new smuggling route → architecture tests (layer 4).** Check that the
   rules cover the new code: no public methods named `setX`, no public no-argument constructors,
-  only `final` fields, a domain that depends on no framework and no other layer, and no reflection
-  that opens private constructors or fields (`setAccessible`, `trySetAccessible`): it would create a
+  only `final` fields, a domain that depends on no framework and on nothing else in the
+  application, and no reflection that opens private constructors or fields (`setAccessible`, `trySetAccessible`): it would create a
   proof type without its factory, or change a field after validation. Each rule checks exactly what
   it says and no more, so add one when you meet a route it misses. Write each failure message as the
   next agent's instruction: what to use instead. And test that a defense fails when it should, for
