@@ -57,7 +57,7 @@ peticiones de [`casos.http`](casos.http).
 5. **Protección del propio dominio:** la integración continua (`.github/workflows/ci.yml`) ejecuta
    todo con cada cambio, y `.github/CODEOWNERS` pide la revisión de los propietarios para el dominio,
    los caminos por los que sus datos se guardan y se devuelven (`EnrollmentStore` y
-   `EnrollmentView`), las pruebas de arquitectura y de ida y vuelta, el `pom.xml`, la integración
+   `EnrollmentView`), las pruebas de arquitectura y de ida y vuelta, la compilación (`pom.xml`, `.mvn/` y `mvnw`), la integración
    continua, el `AGENTS.md` y la *skill*. El perímetro no es el paquete del dominio: es todo camino
    por el que sus datos entran, se guardan o salen.
    Para que sea obligatorio, activa en GitHub la protección de la rama `main`, con las comprobaciones

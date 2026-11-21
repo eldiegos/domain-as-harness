@@ -186,9 +186,9 @@ A change is finished when the layers it touches are up to date. In the same chan
   stored or leaves, not the domain package alone: an agent that cannot touch the domain can still
   add a store next to it. So cover the domain package; the code that stores its data and holds what
   the types cannot (the store or repository, the migrations); the mapping that returns it (the read
-  model); the architecture and round-trip tests; the build file (excluding one test there dismantles
-  layer 4); the CI configuration; the `CODEOWNERS` file itself; and the instruction files and
-  skills.
+  model); the architecture and round-trip tests; the build configuration and its wrapper (`pom.xml`,
+  `.mvn/` and `mvnw` in Maven: excluding a test or adding `-DskipTests` there dismantles layer 4);
+  the CI configuration; the `CODEOWNERS` file itself; and the instruction files and skills.
 - **New concept or convention → the map (layer 6).** One or two lines in AGENTS.md: where it lives,
   why, what not to touch and which check guards it. Don't restate rules the code already enforces.
 
@@ -312,7 +312,7 @@ Then review the harness around the domain:
     says.
 12. Checks that don't bind: CI that doesn't run the architecture tests, a build file that excludes a
     test, or a CI job that is not a required check.
-13. `CODEOWNERS` that leaves out the store, the read model, the build file, the CI configuration,
+13. `CODEOWNERS` that leaves out the store, the read model, the build files, the CI configuration,
     the architecture tests or itself.
 14. An AGENTS.md that is the only place a rule lives, or that restates every rule instead of
     pointing to the checks.
