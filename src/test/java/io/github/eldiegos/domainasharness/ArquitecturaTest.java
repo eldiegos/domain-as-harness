@@ -1,24 +1,39 @@
 package io.github.eldiegos.domainasharness;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaField;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import io.github.eldiegos.domainasharness.api.EnrollmentView;
+import io.github.eldiegos.domainasharness.dominio.Enrollment;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+import java.util.Map;
+
+import static com.tngtech.archunit.base.DescribedPredicate.describe;
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameMatching;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noConstructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 
 /**
- * La parte del harness que protege al propio dominio. Se ejecuta en cada {@code ./mvnw verify} y en la
- * integración continua, y rechaza el cambio si una clase del paquete {@code dominio} gana setters, un
- * constructor público vacío, campos mutables o dependencias de un framework, o si alguien usa la
- * reflexión para abrir un constructor o un campo privados. Nadie desmonta la aduana sin que se note.
+ * La parte del harness que protege al propio dominio y los caminos que llegan a él. Se ejecuta en cada
+ * {@code ./mvnw verify} y en la integración continua, y rechaza el cambio si una clase del paquete
+ * {@code dominio} gana setters, un constructor público vacío, campos mutables o dependencias de un
+ * framework; si alguien usa la reflexión o {@code Unsafe} para abrir un constructor o un campo privados;
+ * o si la API devuelve como matrícula algo que no salió de una {@link Enrollment} o guarda datos fuera
+ * del almacén. Nadie desmonta la aduana sin que se note.
  *
  * <p>Los mensajes dicen qué usar en su lugar: un agente de IA lee ese error como su siguiente instrucción.
  */
@@ -27,9 +42,11 @@ class ArquitecturaTest {
 
 	private static final String DOMINIO = "..dominio..";
 
+	/** Todo lo que se compila de src/main, en cualquier paquete. */
 	private static final JavaClasses APLICACION = new ClassFileImporter()
 		.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-		.importPackages("io.github.eldiegos.domainasharness");
+		.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_ARCHIVES)
+		.importClasspath();
 
 	@Test
 	@DisplayName("Ninguna clase del dominio tiene setters")
@@ -83,13 +100,50 @@ class ArquitecturaTest {
 	}
 
 	@Test
-	@DisplayName("Nadie usa la reflexión para abrir un constructor o un campo privados")
+	@DisplayName("Nadie usa la reflexión ni Unsafe para abrir un constructor o un campo privados")
 	void sinReflexion() {
 		ArchRule rule = noClasses()
-			.that().resideInAPackage("io.github.eldiegos.domainasharness..")
-			.should().callMethodWhere(target(nameMatching("setAccessible|trySetAccessible")))
-			.because("la reflexión abre constructores y campos privados y salta la aduana. Construye los objetos"
-				+ " con su constructor, su fábrica o su función parse");
+			.should().callMethodWhere(target(nameMatching("setAccessible|trySetAccessible|privateLookupIn")))
+			.orShould().dependOnClassesThat().resideInAnyPackage("sun.misc..", "sun.reflect..", "jdk.internal..")
+			.because("la reflexión, MethodHandles.privateLookupIn y Unsafe abren constructores y campos privados"
+				+ " y saltan la aduana. Construye los objetos con su constructor, su fábrica o su función parse");
 		rule.check(APLICACION);
+	}
+
+	@Test
+	@DisplayName("La API solo devuelve como matrícula lo que sale de una Enrollment")
+	void vistaDesdeElDominio() {
+		DescribedPredicate<JavaMethod> desdeUnaEnrollment = describe("son EnrollmentView.of(long, Enrollment)",
+			m -> m.getOwner().isEquivalentTo(EnrollmentView.class) && m.getName().equals("of")
+				&& m.getRawParameterTypes().stream().anyMatch(t -> t.isEquivalentTo(Enrollment.class)));
+		ArchRule rule = constructors()
+			.that().areDeclaredIn(EnrollmentView.class)
+			.should().onlyBeCalled().byMethodsThat(desdeUnaEnrollment)
+			.because("lo que la API devuelve como matrícula tiene que haber pasado la aduana. Construye la vista"
+				+ " con EnrollmentView.of a partir de una Enrollment; si los datos no la pasan, son un borrador"
+				+ " (EnrollmentDraft) y se devuelven como tal");
+		rule.check(APLICACION);
+	}
+
+	@Test
+	@DisplayName("Solo el almacén guarda datos: la API y los casos de uso no tienen colecciones")
+	void sinAlmacenesParalelos() {
+		DescribedPredicate<JavaField> noSonUnValor = describe("no son el valor de un record ni de una excepción",
+			f -> f.getModifiers().contains(JavaModifier.STATIC)
+				|| !(f.getOwner().isRecord() || f.getOwner().isAssignableTo(Throwable.class)));
+		DescribedPredicate<JavaField> sinColecciones = describe("no guardar colecciones, mapas ni arrays",
+			f -> f.getAllInvolvedRawTypes().stream().noneMatch(ArquitecturaTest::esUnaColeccion));
+		ArchRule rule = fields()
+			.that().areDeclaredInClassesThat().resideOutsideOfPackages(DOMINIO, "..almacen..", "..pagos..")
+			.and(noSonUnValor)
+			.should(ArchCondition.from(sinColecciones))
+			.because("una colección en la API o en un caso de uso es un almacén paralelo: lo que guarda no pasa por"
+				+ " la aduana y la API puede devolverlo. Guarda los datos en el paquete almacen, como tipos del"
+				+ " dominio");
+		rule.check(APLICACION);
+	}
+
+	private static boolean esUnaColeccion(JavaClass c) {
+		return c.isArray() || c.isAssignableTo(Collection.class) || c.isAssignableTo(Map.class);
 	}
 }

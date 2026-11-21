@@ -100,6 +100,7 @@ src/main/java/io/github/eldiegos/domainasharness/
   pagos/         un sistema de pagos en memoria
 src/test/java/io/github/eldiegos/domainasharness/
   ArquitecturaTest.java              nadie desmonta la aduana sin que se note
+  IdaYVueltaTest.java                lo que la API devuelve vuelve a pasar la aduana
   NoCompilaTest.java                 lo que no compila: el compilador hace cumplir las reglas
   dominio/EmailTest                  el puesto fronterizo
   dominio/admision/...Test           el depósito, en pequeño: la solicitud de admisión

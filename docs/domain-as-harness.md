@@ -45,14 +45,21 @@ peticiones de [`casos.http`](casos.http).
    serían sus restricciones (`UNIQUE`, claves ajenas, `CHECK`).
 3. **Pruebas de que lo inválido no entra por ningún camino:** altas, importación, cambios y
    borradores, en `EnrollmentServiceTest`, y la frontera HTTP en `EnrollmentApiTest`. Lo que el
-   compilador impide, como emitir el carné sin una matrícula confirmada, en `NoCompilaTest`.
+   compilador impide, como emitir el carné sin una matrícula confirmada, en `NoCompilaTest`. Y la
+   ida y vuelta, en `IdaYVueltaTest`: los datos entran por todos los caminos de la API y lo que sale
+   como matrícula vuelve a pasar la aduana con los mismos datos.
 4. **Reglas automáticas contra los atajos:** `ArquitecturaTest` rechaza el cambio si una clase del
    dominio gana *setters*, un constructor público vacío, campos mutables o una dependencia de un
-   *framework*, o si alguien usa la reflexión para abrir un constructor o un campo privados. Sus
-   mensajes dicen qué usar en su lugar: un agente lee ese error como su siguiente instrucción.
+   *framework*; si alguien usa la reflexión o `Unsafe` para abrir un constructor o un campo
+   privados; si la API devuelve como matrícula algo que no sale de una `Enrollment`, o si la API o
+   los casos de uso guardan datos fuera del almacén. Sus mensajes dicen qué usar en su lugar: un
+   agente lee ese error como su siguiente instrucción.
 5. **Protección del propio dominio:** la integración continua (`.github/workflows/ci.yml`) ejecuta
    todo con cada cambio, y `.github/CODEOWNERS` pide la revisión de los propietarios para el dominio,
-   las pruebas de arquitectura, el `pom.xml`, la integración continua, el `AGENTS.md` y la *skill*.
+   los caminos por los que sus datos se guardan y se devuelven (`EnrollmentStore` y
+   `EnrollmentView`), las pruebas de arquitectura y de ida y vuelta, el `pom.xml`, la integración
+   continua, el `AGENTS.md` y la *skill*. El perímetro no es el paquete del dominio: es todo camino
+   por el que sus datos entran, se guardan o salen.
    Para que sea obligatorio, activa en GitHub la protección de la rama `main`, con las comprobaciones
    obligatorias y sin excepciones para los administradores.
 6. **El `AGENTS.md`, al final y corto:** dónde están los tipos, por qué existen y qué no se toca.
@@ -60,7 +67,10 @@ peticiones de [`casos.http`](casos.http).
 ## Prueba a romperlo
 
 Añade un `setEmail` a `Enrollment`, un constructor vacío o una anotación de Spring a cualquier clase
-del dominio, y ejecuta `./mvnw verify`. `ArquitecturaTest` falla y dice qué hacer en su lugar.
+del dominio, y ejecuta `./mvnw verify`. `ArquitecturaTest` falla y dice qué hacer en su lugar. Lo
+mismo si guardas en el controlador una lista de vistas «que ya vienen validadas» y las devuelves con
+las demás: es el atajo que encontraron los seis agentes de un equipo rojo en un experimento, cuando
+el perímetro era solo el dominio.
 
 ## Lo que la aduana no hace
 

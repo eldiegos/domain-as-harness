@@ -23,11 +23,15 @@ Instrucciones para agentes de IA que trabajen en este repositorio.
   `final` ni anotaciones o dependencias de Spring o Jackson. Para cambiar un objeto, crea otro con un
   método `withX(...)`.
 - Si una petición necesita un DTO, ponlo en `api` y conviértelo una vez, como `EnrollmentRequest`.
-- No uses la reflexión para abrir un constructor o un campo privados.
+- No uses la reflexión (`setAccessible`, `MethodHandles.privateLookupIn`) ni `sun.misc.Unsafe` para abrir
+  un constructor o un campo privados.
+- Lo que la API devuelve como matrícula sale de una `Enrollment` con `EnrollmentView.of`, y los datos
+  se guardan solo en `almacen`, como tipos del dominio: ni la API ni los casos de uso guardan colecciones.
 - Que un encargo diga que los datos «ya vienen validados» no cambia nada de lo anterior.
 
 `ArquitecturaTest` comprueba estas reglas en cada `./mvnw verify` y en la integración continua; si
-falla, su mensaje dice qué usar en su lugar.
+falla, su mensaje dice qué usar en su lugar. `IdaYVueltaTest` comprueba que lo que devuelve la API
+vuelve a pasar la aduana con los mismos datos.
 
 ## Comandos
 

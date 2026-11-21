@@ -13,6 +13,10 @@ import java.util.Optional;
  * {@code new ConfirmedEnrollment(...)} sin pasar el control. Por eso es una clase con constructor
  * privado y una fábrica: {@link #confirm} es la única puerta.
  *
+ * <p>El precio: el JDK impide escribir los campos de un record incluso con {@code Unsafe}, pero no los de
+ * una clase. Por eso {@code ArquitecturaTest} prohíbe {@code setAccessible}, {@code privateLookupIn} y
+ * {@code sun.misc} en toda la aplicación.
+ *
  * <p>El tipo prueba que el control se pasó, no que siga siendo cierto: si después se devuelve el
  * pago, este objeto sigue existiendo. Eso se protege con transacciones, no con tipos.
  */
