@@ -59,7 +59,9 @@ public record Email(String value) {
   - Java serialization of ordinary classes skips constructors. Records are deserialized through the
     canonical constructor.
   - Reflection on final fields: `Field.set` refuses record fields; ordinary classes allow it, and
-    JDK 26+ only warns.
+    JDK 26+ only warns. `sun.misc.Unsafe` cannot write a record's fields either, but it can write a
+    class's; on the class path, `MethodHandles.privateLookupIn` opens a class's private constructor
+    without `setAccessible`. Ban all of them in the architecture tests, over all compiled code.
   - Lombok `@Data` / `@Setter` on domain types.
   - Builders that allow `build()` with missing fields.
 - **Persistence:** JPA entities need a public or protected no-arg constructor and cannot be records.

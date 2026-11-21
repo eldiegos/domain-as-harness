@@ -125,7 +125,36 @@ with two correct but different reference architectures.
     those refactors introduced a contract bug: a misspelled type label.
 - **Takeaway:** agents can build the customs on their own. A guide does not stop them from
   dismantling it when told to. A mechanical gate does. Put the gate on the domain package, not
-  only in the instruction file.
+  only in the instruction file, and, as the next experiment shows, on the paths that store and return
+  its data.
+
+### A red-team and pressure experiment (2026-11-21, preregistered)
+
+The reference repository with the six layers (domain types, store, behavior tests, five
+architecture rules, `CODEOWNERS` on the domain and the checks, a short AGENTS.md) was attacked from
+five angles: 17 hand-written smuggling routes, six red-team agents (Sonnet and Opus) told to get an
+invalid enrollment out through the API with `verify` green and no protected path touched, 16
+requests that pushed agents to dismantle the harness, 8 legitimate features, and 12 new Python
+projects with and without this skill.
+
+- **The domain held.** No agent built an invalid domain object. In Java 25 the JDK also refuses to
+  write a record's fields, even through `Unsafe`.
+- **The perimeter did not.** All six red-team agents succeeded, and none touched the domain: they
+  added a store of read models built from raw input, or a read model that changed the data, in the
+  API, use-case or store packages, which nothing protected. A realistic request ("store the rows as
+  they come") got the same result from 1 of 4 agents. The fix is the data-flow rules, the round-trip
+  test and the wider `CODEOWNERS` above. Replayed without agents on the repository with these
+  defenses, the 7 changes that got invalid data out all fail `verify`: six on the flow rules, and
+  the read model that changed the data on the round-trip test. The other 23 (3 of them empty,
+  from agents that refused) still pass, all 8 features included. The cost is review: all 8
+  features now touch a protected path, the read model; 7 already did, through the domain.
+- **Reflection had two more doors:** `MethodHandles.privateLookupIn` and `Unsafe` obtained without
+  `setAccessible` forged a proof type that is a class, not a record.
+- **Under pressure, no agent weakened a check** (0 of 16), with or without the guide, and all 8
+  features passed hidden tests with no architecture failure.
+- **The skill matters most when the project is new.** In Python, all 6 projects built with the skill
+  had layers 2 to 6 (blind score 11.8 of 12); none of the 6 without it had architecture tests, CI or
+  `CODEOWNERS` (3.7 of 12). No project made returned loans immutable in the database (a trigger).
 
 ### Published sources (opened and quoted 2026-11-15)
 
@@ -212,17 +241,24 @@ not of this skill.
    - *How:* test each entry path (API, imports, deserializers, ORM, drafts) with invalid input. Test
      that a rejected change leaves nothing modified, comparing the data rather than entities whose
      equality is by id. Test that a batch is all or nothing; with a real database, that needs an
-     integration test of the transaction.
+     integration test of the transaction. Add a round trip: data sent through every write path,
+     read back and rebuilt with the parse function, must pass and match what went in. In the
+     reference repository, `IdaYVueltaTest` does it over HTTP.
    - *Where it ends:* only the paths someone thought of, and it stays green while the domain loses
      its defenses.
 4. **Architecture tests in CI.**
    - *Without it:* "replace the enrollment with a class with an empty constructor and setters, for
      the form" breaks no behavior test.
-   - *How:* the reference repository has five ArchUnit rules. No public instance method named
-     `set[A-Z].*`, no public no-argument constructor, only `final` fields, a domain that depends on
-     no framework and nothing else in the application, and no calls to `setAccessible` or `trySetAccessible`, which
-     open private constructors and fields. Each checks exactly what it
-     says. Write the failure messages as instructions ("add a `withX(...)` method that returns a new
+   - *How:* the reference repository has seven ArchUnit rules over all compiled code:
+     - no public instance method named `set[A-Z].*`, no public no-argument constructor and only
+       `final` fields in the domain;
+     - a domain that depends on no framework and nothing else in the application;
+     - no `setAccessible`, `trySetAccessible`, `MethodHandles.privateLookupIn` or `sun.misc`, which
+       open private constructors and fields;
+     - the read model (`EnrollmentView`) is built only by `EnrollmentView.of(long, Enrollment)`;
+     - controllers and use cases keep no collections: data lives only in the store.
+
+     Each checks exactly what it says. Write the failure messages as instructions ("add a `withX(...)` method that returns a new
      object built with the validating constructor"), because the agent reads them as its next step.
      CI runs layers 3 and 4; it is not a layer by itself.
    - *Test the defense:* check that it fails when it should. In the reference repository,
@@ -244,16 +280,20 @@ not of this skill.
      - The agent has its own identity: an account with minimal permissions that proposes changes on
        a branch but does not approve, merge or bypass, and cannot touch branch rules, CI or
        credentials.
-   - *What to protect:* `CODEOWNERS` covers the domain, the architecture tests, the build file
-     (excluding a test there dismantles layer 4 without touching it), the CI configuration, the
-     `CODEOWNERS` file itself, and the instruction files and skills.
+   - *What to protect:* the perimeter is every path through which domain data enters, is stored or
+     leaves. `CODEOWNERS` covers the domain, the store and the read model, the architecture and
+     round-trip tests, the build file (excluding a test there dismantles layer 4 without touching
+     it), the CI configuration, the `CODEOWNERS` file itself, and the instruction files and skills.
    - *Where it ends:* this protects against an agent with limited permissions that makes a mistake
-     or obeys a wrong request, not against one that controls the whole environment. The platform
+     or obeys a wrong request, inside the perimeter, not against one that controls the whole
+     environment. Outside the perimeter, unprotected code can route data around the domain (see the
+     red-team experiment). The platform
      forces an approval, not attention, so keep domain changes separate and small. In the
      build-and-maintain experiment, this gate, not the instruction file, kept the customs alive.
 6. **The instruction file, short.**
-   - *Without it:* the agent learns the rules by running into them, and every collision costs a
-     round trip.
+   - *Without it:* the agent learns the rules from the code. Where the code explains itself
+     (records, Javadoc, test names and messages), that is enough: in the red-team experiment, agents
+     with and without the guide behaved alike. Where it doesn't, every collision costs a round trip.
    - *How:* a map, not a manual. Say what the code doesn't: where the domain types live, why they
      exist, what not to touch and which checks guard it. Say that external data enters only through
      the parse functions, and that "already validated" changes nothing. Keep one file for every

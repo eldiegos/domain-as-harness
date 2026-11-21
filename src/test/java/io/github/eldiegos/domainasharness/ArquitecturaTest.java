@@ -113,7 +113,7 @@ class ArquitecturaTest {
 	@Test
 	@DisplayName("La API solo devuelve como matrícula lo que sale de una Enrollment")
 	void vistaDesdeElDominio() {
-		DescribedPredicate<JavaMethod> desdeUnaEnrollment = describe("son EnrollmentView.of(long, Enrollment)",
+		DescribedPredicate<JavaMethod> desdeUnaEnrollment = describe("are EnrollmentView.of(long, Enrollment)",
 			m -> m.getOwner().isEquivalentTo(EnrollmentView.class) && m.getName().equals("of")
 				&& m.getRawParameterTypes().stream().anyMatch(t -> t.isEquivalentTo(Enrollment.class)));
 		ArchRule rule = constructors()
@@ -128,10 +128,10 @@ class ArquitecturaTest {
 	@Test
 	@DisplayName("Solo el almacén guarda datos: la API y los casos de uso no tienen colecciones")
 	void sinAlmacenesParalelos() {
-		DescribedPredicate<JavaField> noSonUnValor = describe("no son el valor de un record ni de una excepción",
+		DescribedPredicate<JavaField> noSonUnValor = describe("are not instance fields of a record or an exception",
 			f -> f.getModifiers().contains(JavaModifier.STATIC)
 				|| !(f.getOwner().isRecord() || f.getOwner().isAssignableTo(Throwable.class)));
-		DescribedPredicate<JavaField> sinColecciones = describe("no guardar colecciones, mapas ni arrays",
+		DescribedPredicate<JavaField> sinColecciones = describe("not hold collections, maps or arrays",
 			f -> f.getAllInvolvedRawTypes().stream().noneMatch(ArquitecturaTest::esUnaColeccion));
 		ArchRule rule = fields()
 			.that().areDeclaredInClassesThat().resideOutsideOfPackages(DOMINIO, "..almacen..", "..pagos..")

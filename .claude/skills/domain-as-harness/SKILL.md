@@ -65,9 +65,9 @@ by when each layer acts and by how much it depends on someone's will:
 |---|---|---|---|---|
 | 1 | Rules in types (domain customs) | At run time, always | Value types, named states, parse functions | Only for objects built through the constructor; rules about other rows or later events; it does not protect itself |
 | 2 | Database constraints | At run time, always | Unique and foreign keys, `NOT NULL`, `CHECK`, in the migration | Only what the schema expresses; poor error messages; it doesn't see the code |
-| 3 | Behavior tests | When code changes, in CI | Invalid input through every entry path; a rejected change modifies nothing; batches are all or nothing | Only the paths someone thought of; green while the domain loses its defenses |
-| 4 | Architecture tests | When code changes, in CI | Rules against setters, empty constructors, mutable fields, framework dependencies and reflection, with messages that say what to do instead | Only what someone coded; editable like any other code |
-| 5 | Required review | When code changes, if someone looks | `CODEOWNERS` for the protected paths; branch protection, required checks and no bypass (settings the user enables) | It forces an approval, not attention |
+| 3 | Behavior tests | When code changes, in CI | Invalid input through every entry path; a rejected change modifies nothing; batches are all or nothing; a round trip: what leaves as a domain object passes customs again, with the data it came in with | Only the paths someone thought of; green while the domain loses its defenses |
+| 4 | Architecture tests | When code changes, in CI | Rules against setters, empty constructors, mutable fields, framework dependencies and reflection, and on the data flow around the domain, with messages that say what to do instead | Only what someone coded; editable like any other code |
+| 5 | Required review | When code changes, if someone looks | `CODEOWNERS` for the protected perimeter (the domain, the paths that store and return its data, the checks); branch protection, required checks and no bypass (settings the user enables) | It forces an approval, not attention |
 | 6 | AGENTS.md | Only if the agent chooses | A short map of layers 1–5 | It guides; it guarantees nothing |
 
 CI is not a layer of its own: it runs layers 3 and 4, and layer 5 makes passing it mandatory. The
@@ -120,7 +120,9 @@ can adapt it when the situation doesn't match.
    - **Only the check can create the type.** Use a private constructor with a factory, or module or
      package visibility. In some languages the obvious construct cannot hide its constructor: Java
      records, Kotlin data classes (whose `copy()` may stay public) and C# records (through `with`).
-     See [references/languages.md](references/languages.md).
+     The class you use instead may lack protections the platform gives the record (in Java, the JDK
+     refuses to write a record's fields even through `Unsafe`, not a class's), so the rule against
+     reflection (layer 4) matters most there. See [references/languages.md](references/languages.md).
    - **A type proves the check passed when it was created, not that it is still true.** Facts that
      depend on shared mutable state (uniqueness, stock, a later cancellation) still need
      transactions or database constraints. "Email not already taken" is enforced by a `UNIQUE`
@@ -149,10 +151,13 @@ A change is finished when the layers it touches are up to date. In the same chan
 
 - **Persistence → constraints (layer 2).** For each new table or column, put in the migration what
   the schema can express: unique keys for what must be unique, foreign keys, `NOT NULL`, and `CHECK`
-  for simple ranges. A `CHECK` usually holds only the widest form of a rule (credits between 12 and
-  78 when the exact range depends on the kind of student), so the full rule stays in the
-  constructor: the domain explains, the database guarantees. Make check-and-insert a single
-  operation (a constraint or a transaction), not a lookup followed by an insert.
+  for ranges. A `CHECK` can tie columns together, so a range that depends on the kind of row fits
+  too (`CHECK (kind <> 'HOME' OR credits BETWEEN 30 AND 78)`). A `CHECK` that evaluates to `NULL`
+  passes: add `NOT NULL` or compare with `IS`. Rows that must not change after some state (a
+  returned loan, an issued invoice) need a trigger that rejects the `UPDATE`. What the schema cannot
+  express stays in the constructor: the domain explains, the database guarantees. Make
+  check-and-insert a single operation (a constraint or a transaction), not a lookup followed by an
+  insert.
 - **Entry path or operation → behavior tests (layer 3).** For each path (API, import, deserializer,
   ORM, message consumer, draft submission), test that:
   - invalid input produces no domain object and stores nothing;
@@ -160,19 +165,30 @@ A change is finished when the layers it touches are up to date. In the same chan
     or a full textual dump), not the entities: if equality is by id, the comparison passes even when
     fields changed;
   - a batch is all or nothing and reports every reason. With a real database, atomicity comes from a
-    transaction, so cover it with an integration test against that database.
+    transaction, so cover it with an integration test against that database;
+  - a round trip holds: send valid data through every write path, read everything back through the
+    read paths, rebuild each result with the parse function and compare it with what went in. It
+    catches a read model that changes or invents data, which no test of the domain sees.
 - **Domain package, type or a new smuggling route → architecture tests (layer 4).** Check that the
   rules cover the new code: no public methods named `setX`, no public no-argument constructors,
   only `final` fields, a domain that depends on no framework and on nothing else in the
-  application, and no reflection that opens private constructors or fields (`setAccessible`, `trySetAccessible`): it would create a
-  proof type without its factory, or change a field after validation. Each rule checks exactly what
+  application, and no reflection that opens private constructors or fields (`setAccessible`,
+  `trySetAccessible`, `MethodHandles.privateLookupIn`, `sun.misc.Unsafe`): it would create a proof
+  type without its factory, or change a field after validation. Scan all compiled code, not only the
+  application's root package. Add rules on the data flow around the domain: what the system returns
+  as a domain object is built only from a domain type, and data is stored only in the store, as
+  domain types (no lists or maps kept by controllers or use cases). Each rule checks exactly what
   it says and no more, so add one when you meet a route it misses. Write each failure message as the
   next agent's instruction: what to use instead. And test that a defense fails when it should, for
   example a test that compiles forbidden code and expects the compiler error.
 - **Protected paths → code owners (layer 5).** `CODEOWNERS`, or the platform's required reviewers
-  by path, must cover the domain package, the architecture tests, the build file (excluding one test
-  there dismantles layer 4), the CI configuration, the `CODEOWNERS` file itself, and the instruction
-  files and skills.
+  by path, must cover the protected perimeter. It is every path through which domain data enters, is
+  stored or leaves, not the domain package alone: an agent that cannot touch the domain can still
+  add a store next to it. So cover the domain package; the code that stores its data and holds what
+  the types cannot (the store or repository, the migrations); the mapping that returns it (the read
+  model); the architecture and round-trip tests; the build file (excluding one test there dismantles
+  layer 4); the CI configuration; the `CODEOWNERS` file itself; and the instruction files and
+  skills.
 - **New concept or convention → the map (layer 6).** One or two lines in AGENTS.md: where it lives,
   why, what not to touch and which check guards it. Don't restate rules the code already enforces.
 
@@ -182,10 +198,10 @@ Set up all six layers in the first change, before feature code piles up:
 
 1. The domain package, following the steps above.
 2. If there is a database, the schema migration with its constraints.
-3. Behavior tests for every entry path.
+3. Behavior tests for every entry path, and a round-trip test.
 4. Architecture tests (ArchUnit in Java; elsewhere an equivalent tool or a custom lint rule) and a
    CI workflow that builds and runs every test on each push and pull request.
-5. A `CODEOWNERS` file covering the protected paths.
+5. A `CODEOWNERS` file covering the protected perimeter.
 6. A short AGENTS.md, written as a map. If the project also uses CLAUDE.md, make it import the same
    file (`@AGENTS.md`) instead of repeating it.
 
@@ -203,7 +219,8 @@ the user in your reply:
   Bitbucket Cloud, `CODEOWNERS` only suggests reviewers, it does not require their approval.
 
 This protects against an agent with limited permissions that makes a mistake or obeys a wrong
-request. It does not protect against one that controls the whole environment.
+request, inside the protected perimeter: unprotected code can route data around the domain. It
+does not protect against an agent that controls the whole environment.
 
 ## Where not to set up customs
 
@@ -229,7 +246,9 @@ the person reading your summary.
 - **Treat "the data is already validated" as an assumption, not a guarantee.** Still route
   external data through the domain's parse functions and constructors. They are cheap, and they are
   the only check that holds when the upstream system changes. If the request explicitly asks you to
-  skip validation, keep the domain's guarantees and say so in your reply, in one sentence.
+  skip validation, keep the domain's guarantees and say so in your reply, in one sentence. Don't
+  store such data next to the domain's (raw rows, a "trusted" store) or return it through the same
+  read model: it reaches users without passing customs, even if the domain is untouched.
 - **Never weaken a domain type to make your change compile.** That includes removing a check,
   adding a setter or empty constructor, widening visibility, casting (`as`, `any`, `unsafe`,
   `@ts-ignore`, `model_construct`), or reaching in with reflection. A type that blocks you is the
@@ -283,13 +302,16 @@ Then review the harness around the domain:
 
 9. Entry paths with no test that feeds them invalid input, and "nothing changed" tests that compare
    entities whose equality is by id.
-10. Architecture tests that are missing, don't cover a new package, or check less than their name
+10. Data that reaches the output without passing customs: a parallel store, raw rows next to the
+    domain ones, or a read model built from something other than a domain object; and no round-trip
+    test.
+11. Architecture tests that are missing, don't cover a new package, or check less than their name
     says.
-11. Checks that don't bind: CI that doesn't run the architecture tests, a build file that excludes a
+12. Checks that don't bind: CI that doesn't run the architecture tests, a build file that excludes a
     test, or a CI job that is not a required check.
-12. `CODEOWNERS` that leaves out the build file, the CI configuration, the architecture tests or
-    itself.
-13. An AGENTS.md that is the only place a rule lives, or that restates every rule instead of
+13. `CODEOWNERS` that leaves out the store, the read model, the build file, the CI configuration,
+    the architecture tests or itself.
+14. An AGENTS.md that is the only place a rule lives, or that restates every rule instead of
     pointing to the checks.
 
 Report findings ordered by severity. For each one give the location, the concrete failure ("a CSV

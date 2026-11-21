@@ -36,8 +36,9 @@ Con la skill, el agente modela cada estado nuevo como un tipo (una matrícula an
 reconocimiento pendiente), hace que las entradas nuevas pasen por la frontera aunque el encargo diga
 que los datos ya vienen validados, y convierte las reglas que dependen de una acción en el tipo que
 esa acción recibe. En el mismo cambio, prueba cada entrada nueva con datos inválidos, también que un
-cambio rechazado no modifica nada; comprueba que las pruebas de arquitectura cubren el código nuevo,
-y pone al día el `CODEOWNERS` y el `AGENTS.md` si hace falta. Y no desactiva una prueba, ni toca la
+cambio rechazado no modifica nada, y que lo que devuelve como matrícula vuelve a pasar la aduana;
+comprueba que las pruebas de arquitectura cubren el código nuevo, también los caminos por los que se
+guardan y se devuelven los datos, y pone al día el `CODEOWNERS` y el `AGENTS.md` si hace falta. Y no desactiva una prueba, ni toca la
 compilación o la integración continua, para que un cambio pase.
 
 ## En tus proyectos
