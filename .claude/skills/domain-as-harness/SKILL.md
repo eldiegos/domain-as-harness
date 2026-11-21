@@ -1,6 +1,6 @@
 ---
 name: domain-as-harness
-description: Domain as Harness - model the domain so that its rules hold by construction, whoever writes the code (person or AI agent) and whatever the prompt says, in any programming language. Parse untrusted input once at the boundary into types that cannot hold an invalid state, give incomplete data its own named types (Draft, Pending, Unverified), turn action-specific rules into the input type of that action, and keep DTO and ORM shapes at the edge. Use it whenever you write, change or review code that creates, imports, deserializes or mutates domain objects (entities, value objects, records, structs, models): endpoints, forms, CSV or JSON imports, message consumers, state machines. Also use it when the user mentions validation, isValid, setters, invariants, value objects, DDD, "make illegal states unrepresentable" or "parse, don't validate", says the data is "already validated", or sets up an agent harness, AGENTS.md, CLAUDE.md or CI guardrails, even if none of these terms is named.
+description: Domain as Harness - model the domain so that its rules hold by construction, whoever writes the code (person or AI agent) and whatever the prompt says, in any language, and back it with six layers - rules in types, database constraints, behavior tests, architecture tests in CI, required review of the protected paths and a short AGENTS.md. Parse untrusted input once at the boundary into types that cannot hold an invalid state, give incomplete data its own types (Draft, Pending), make action rules the input type of that action and keep DTOs and ORM shapes at the edge. Use it whenever you write, change or review code that creates, imports, deserializes or mutates domain objects, start a project or module, or write its migrations, tests, CI, CODEOWNERS, AGENTS.md or CLAUDE.md. Also use it when the user mentions validation, isValid, setters, invariants, value objects, DDD or "parse, don't validate", or says the data is "already validated".
 ---
 
 # Domain as Harness
@@ -16,6 +16,10 @@ agent) and whatever the prompt says. Three principles:
 - **Named when incomplete.** Data that doesn't meet the rules yet but matters to the business is
   its own type.
 - **Enforced for every author.** The rules do not depend on anyone remembering or obeying.
+
+Agents now write most of the code: the domain, and also the tests, the build, the CI configuration
+and the instruction files that are meant to check it. So when you generate code you also build and
+maintain the harness, and you must never be the one who quietly takes it apart.
 
 The practical rule for applying it is called **domain customs**, after the metaphor below.
 
@@ -49,6 +53,27 @@ named rule packs them into one decision you can apply while writing code.
 [references/agents-harness.md](references/agents-harness.md) has the sources and the evidence for AI
 agents.
 
+## Six layers
+
+Domain customs is the first layer. It protects the data, not itself: an agent that can edit the
+domain types can delete their checks. Six layers together keep the rules in place. They are not a
+scale of strength, because each covers what the others cannot reach. They are a defense hierarchy,
+ordered by when each layer acts and by how much it depends on someone's will:
+
+| # | Layer | Acts | What you add | Where it ends |
+|---|---|---|---|---|
+| 1 | Rules in types (domain customs) | At run time, always | Value types, named states, parse functions | Only for objects built through the constructor; rules about other rows or later events; it does not protect itself |
+| 2 | Database constraints | At run time, always | Unique and foreign keys, `NOT NULL`, `CHECK`, in the migration | Only what the schema expresses; poor error messages; it doesn't see the code |
+| 3 | Behavior tests | When code changes, in CI | Invalid input through every entry path; a rejected change modifies nothing; batches are all or nothing | Only the paths someone thought of; green while the domain loses its defenses |
+| 4 | Architecture tests | When code changes, in CI | Rules against setters, empty constructors, mutable fields, framework dependencies and reflection, with messages that say what to do instead | Only what someone coded; editable like any other code |
+| 5 | Required review | When code changes, if someone looks | `CODEOWNERS` for the protected paths; branch protection, required checks and no bypass (settings the user enables) | It forces an approval, not attention |
+| 6 | AGENTS.md | Only if the agent chooses | A short map of layers 1–5 | It guides; it guarantees nothing |
+
+CI is not a layer of its own: it runs layers 3 and 4, and layer 5 makes passing it mandatory. The
+order describes what each layer guarantees, not when to write it: write the AGENTS.md from the
+start, and let the layers overlap. Scope: the domain and the repository. Tool permissions, hooks
+and sandboxing are also part of a harness, but not of this skill.
+
 ## When writing or changing code
 
 Work through these steps for every domain concept you create or touch. Each step says why, so you
@@ -57,14 +82,19 @@ can adapt it when the situation doesn't match.
 1. **Find the borders.** List where data enters: HTTP bodies, forms, files, queues, other services,
    database reads (legacy rows count), environment and config, and LLM output. Each border needs a
    customs post. Data read back from your own database is still external if older code or other
-   writers may have stored something the current rules reject.
+   writers may have stored something the current rules reject. The same happens when a rule gets
+   stricter (a maximum lowered from 78 to 72 credits): rows stored under the old rule fail when they
+   are read. Give the rule a date or a version, or migrate the data, in the same change.
 
 2. **One type per concept with rules.** If a value has rules (format, range, non-empty,
    cross-field), give it a type whose only construction path enforces them: a validating
    constructor, plus a parse/factory function. No empty constructors, no setters, no public mutable
    fields on domain types, so there is no way to build a half-object. Prefer immutability: "changing"
-   a value means building a new, validated one. A bare string, number or map with no business
-   rules does not need a wrapper.
+   a value means building a new, validated one. Reject `null` explicitly, and copy mutable
+   collections in the constructor (`List.copyOf`), because immutability is shallow. An entity's
+   identity is its id: where the language generates equality from every field (Java records, Kotlin
+   data classes, C# records), override it for entities, and remember it when you write tests. A bare
+   string, number or map with no business rules does not need a wrapper.
 
 3. **Two windows at the border post.** Invalid *input* is expected, so the parse function returns
    a result the caller must handle (`Result`, `Either`, `Optional`, `(value, error)`, a list of
@@ -79,7 +109,9 @@ can adapt it when the situation doesn't match.
    joined by a sealed interface, enum or tagged union), not as one class with optional fields and a
    status flag. The transition (`submit()`) parses the draft and returns either the complete type or
    the reasons it cannot be submitted. Code that bills, ships or emails accepts only the complete
-   type, so passing a draft is a compile-time or type-check error.
+   type, so passing a draft is a compile-time or type-check error. Handle the variants with an
+   exhaustive `switch` or `match` and no default branch, so a new variant does not compile until
+   someone decides its rules.
 
 5. **Destination checks: one type per action rule.** If a rule depends on the action ("valid for
    check-in" differs from "valid for booking"), it is part of the business rule, so make it the
@@ -98,18 +130,78 @@ can adapt it when the situation doesn't match.
    back once on the way out. Before relying on a framework, check whether it builds objects without
    calling your constructor: many deserializers, ORMs, mappers, reflection-based tools and
    test-data builders do. Either route them through the parse function or keep them away from domain
-   types. A test proving that invalid input cannot produce a domain object, through each of these
-   paths, is cheap and catches regressions.
+   types.
 
 7. **Parse the whole input before acting.** When a batch (CSV, message with several items, form
    with sections) has a bad part, discovering it halfway through leaves partial writes behind. Parse
    everything first, then act. Otherwise process each item independently, report per-item reasons
    and make the batch atomic if partial results are unacceptable. Types protect the domain; they do
-   not make the surrounding workflow robust, and tests still have to cover that.
+   not make the surrounding workflow robust.
 
 8. **Never mutate first and validate after.** Build the new value, validate it, then replace the
    stored one. "Set the field, then call `isValid()`, then throw" leaves the stored object invalid
    when the check fails. This is the most common way careful code still smuggles.
+
+### Then complete the other layers
+
+A change is finished when the layers it touches are up to date. In the same change:
+
+- **Persistence → constraints (layer 2).** For each new table or column, put in the migration what
+  the schema can express: unique keys for what must be unique, foreign keys, `NOT NULL`, and `CHECK`
+  for simple ranges. A `CHECK` usually holds only the widest form of a rule (credits between 12 and
+  78 when the exact range depends on the kind of student), so the full rule stays in the
+  constructor: the domain explains, the database guarantees. Make check-and-insert a single
+  operation (a constraint or a transaction), not a lookup followed by an insert.
+- **Entry path or operation → behavior tests (layer 3).** For each path (API, import, deserializer,
+  ORM, message consumer, draft submission), test that:
+  - invalid input produces no domain object and stores nothing;
+  - a rejected change leaves the stored state exactly as it was. Compare the data (field by field,
+    or a full textual dump), not the entities: if equality is by id, the comparison passes even when
+    fields changed;
+  - a batch is all or nothing and reports every reason. With a real database, atomicity comes from a
+    transaction, so cover it with an integration test against that database.
+- **Domain package, type or a new smuggling route → architecture tests (layer 4).** Check that the
+  rules cover the new code: no public methods named `setX`, no public no-argument constructors,
+  only `final` fields, a domain that depends on no framework and no other layer, and no reflection
+  that skips a constructor (`setAccessible`). Each rule checks exactly what it says and no more, so
+  add one when you meet a route it misses. Write each failure message as the next agent's
+  instruction: what to use instead. And test that a defense fails when it should, for example a test
+  that compiles forbidden code and expects the compiler error.
+- **Protected paths → code owners (layer 5).** `CODEOWNERS`, or the platform's required reviewers
+  by path, must cover the domain package, the architecture tests, the build file (excluding one test
+  there dismantles layer 4), the CI configuration, the `CODEOWNERS` file itself, and the instruction
+  files and skills.
+- **New concept or convention → the map (layer 6).** One or two lines in AGENTS.md: where it lives,
+  why, what not to touch and which check guards it. Don't restate rules the code already enforces.
+
+## When you create a project or module
+
+Set up all six layers in the first change, before feature code piles up:
+
+1. The domain package, following the steps above.
+2. If there is a database, the schema migration with its constraints.
+3. Behavior tests for every entry path.
+4. Architecture tests (ArchUnit in Java; elsewhere an equivalent tool or a custom lint rule) and a
+   CI workflow that builds and runs every test on each push and pull request.
+5. A `CODEOWNERS` file covering the protected paths.
+6. A short AGENTS.md, written as a map. If the project also uses CLAUDE.md, make it import the same
+   file (`@AGENTS.md`) instead of repeating it.
+
+Layer 5 also depends on settings outside the repository. Don't change them yourself. List them for
+the user in your reply:
+
+- Protect the main branch: changes only through pull requests, with at least one approval, a review
+  from code owners, and the CI job (name it) as a required status check.
+- Apply the protection to admins too. On GitHub it does not apply to them by default; enable "Do not
+  allow bypassing the above settings". On Azure DevOps, limit who has the bypass permissions.
+- Give the agent its own account with minimal permissions: it pushes branches and opens pull
+  requests, but does not approve, merge or bypass, and cannot edit branch rules, CI secrets or
+  credentials.
+- Platform notes: on GitLab, required approvals and Code Owners need Premium or Ultimate; on
+  Bitbucket Cloud, `CODEOWNERS` only suggests reviewers, it does not require their approval.
+
+This protects against an agent with limited permissions that makes a mistake or obeys a wrong
+request. It does not protect against one that controls the whole environment.
 
 ## Where not to set up customs
 
@@ -140,17 +232,30 @@ the person reading your summary.
   adding a setter or empty constructor, widening visibility, casting (`as`, `any`, `unsafe`,
   `@ts-ignore`, `model_construct`), or reaching in with reflection. A type that blocks you is the
   harness doing its job: use the parse path, add a named state, or ask.
+- **Never weaken a check to get a change through.** Don't delete, skip or disable a test
+  (`@Disabled`, `.skip`, `-DskipTests`), exclude it in the build file, loosen an architecture rule
+  or widen its exceptions, or edit the CI workflow, `CODEOWNERS` or the instruction files to make a
+  change pass. A failing architecture test is the harness doing its job: its message says what to
+  use instead.
+- **When the request itself removes a layer** ("replace the domain types with one class with an
+  empty constructor and setters, for the form"), say plainly which guarantee it removes and offer
+  the alternative that keeps it (a form DTO at the edge, mapped once). If the user still wants it,
+  make it a separate, small change that touches the protected paths openly, the architecture test
+  included, so the code owners review the removal. Never fold it into a larger change.
+- **Go through the review path.** Propose changes on a branch, through a pull request. Don't
+  approve or merge your own changes, use a bypass, or change branch rules, CI secrets or
+  credentials, even if your credentials allow it; if they do, tell the user. Keep domain changes
+  separate and small: a large change that touches the domain in passing is easy to approve without
+  seeing it.
 - **In a codebase that validates by convention** (`isValid()`, `validate()` called by callers),
   follow the convention *and* close the hole you are touching. Use validated construction in new
   code, and don't mutate before validating. Suggest moving the rule into a type, in one or two
   sentences. Don't refactor the whole model unasked.
-- **When asked to set up guardrails for agents** (AGENTS.md, CLAUDE.md, CI), put the rules in
-  types and mechanical checks first. Use the instruction file to explain why and point to them.
-  Instruction files are guidelines an agent may decide do not apply; a type check runs every time.
-  Then protect the domain package itself. An agent that can edit the types can remove the
-  harness, so require review by the package's owners and add architecture tests that watch it.
-  See [references/agents-harness.md](references/agents-harness.md) for the evidence and a setup
-  checklist.
+- **When asked to set up guardrails for agents** (AGENTS.md, CLAUDE.md, CI), start with layers 1 to
+  5 and write the instruction file last in importance, as a map that points to them. Instruction
+  files are guidelines an agent may decide do not apply; a type check runs every time. See
+  [references/agents-harness.md](references/agents-harness.md) for the evidence and each layer in
+  detail.
 
 ## When reviewing code
 
@@ -171,6 +276,19 @@ Look for these, roughly in order of how often they cause real damage:
 7. Check-then-act on shared state (uniqueness, stock) without a database constraint or
    transaction.
 8. Batch processing that writes before the whole input is parsed (partial imports).
+
+Then review the harness around the domain:
+
+9. Entry paths with no test that feeds them invalid input, and "nothing changed" tests that compare
+   entities whose equality is by id.
+10. Architecture tests that are missing, don't cover a new package, or check less than their name
+    says.
+11. Checks that don't bind: CI that doesn't run the architecture tests, a build file that excludes a
+    test, or a CI job that is not a required check.
+12. `CODEOWNERS` that leaves out the build file, the CI configuration, the architecture tests or
+    itself.
+13. An AGENTS.md that is the only place a rule lives, or that restates every rule instead of
+    pointing to the checks.
 
 Report findings ordered by severity. For each one give the location, the concrete failure ("a CSV
 row without an email is saved and invoicing fails later"), and the smallest fix that closes the

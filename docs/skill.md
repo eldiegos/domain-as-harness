@@ -3,8 +3,18 @@
 La skill [`domain-as-harness`](../.claude/skills/domain-as-harness/SKILL.md) explica la regla a un
 agente de IA para que la aplique en cualquier código que cree, importe, deserialice o modifique
 objetos de dominio: *endpoints*, formularios, importaciones CSV o JSON, consumidores de mensajes,
-máquinas de estados. Está en inglés y no depende del lenguaje: tiene notas para Java, Kotlin, C#,
-TypeScript, Python, Go, Rust y Swift en [`references/languages.md`](../.claude/skills/domain-as-harness/references/languages.md).
+máquinas de estados. Y como hoy el agente escribe también las pruebas, la compilación y la
+integración continua, le pide que complete en el mismo cambio las seis capas, en este orden:
+
+1. las reglas, en tipos;
+2. las restricciones de la base de datos;
+3. las pruebas de comportamiento;
+4. las pruebas de arquitectura en la integración continua;
+5. la revisión obligatoria de lo que sostiene la aduana;
+6. un `AGENTS.md` corto.
+
+Está en inglés y no depende del lenguaje: tiene notas para Java, Kotlin, C#, TypeScript, Python,
+Go, Rust y Swift en [`references/languages.md`](../.claude/skills/domain-as-harness/references/languages.md).
 
 ## En este repositorio
 
@@ -25,7 +35,10 @@ Encargos para probarla:
 Con la skill, el agente modela cada estado nuevo como un tipo (una matrícula anulada, un
 reconocimiento pendiente), hace que las entradas nuevas pasen por la frontera aunque el encargo diga
 que los datos ya vienen validados, y convierte las reglas que dependen de una acción en el tipo que
-esa acción recibe.
+esa acción recibe. En el mismo cambio, prueba cada entrada nueva con datos inválidos, también que un
+cambio rechazado no modifica nada; comprueba que las pruebas de arquitectura cubren el código nuevo,
+y pone al día el `CODEOWNERS` y el `AGENTS.md` si hace falta. Y no desactiva una prueba, ni toca la
+compilación o la integración continua, para que un cambio pase.
 
 ## En tus proyectos
 
@@ -34,9 +47,17 @@ Copia la carpeta [`.claude/skills/domain-as-harness`](../.claude/skills/domain-a
 También sirve para revisar código existente: «Revisa con la skill `domain-as-harness` el código que
 crea pedidos».
 
+Si le pides un proyecto o un módulo nuevo, monta las seis capas desde el primer cambio. Lo que vive
+fuera del repositorio te lo deja escrito, porque no debe cambiarlo él: proteger la rama principal
+con aprobación y comprobaciones obligatorias, sin excepciones para los administradores, y darle al
+agente una cuenta propia que no aprueba ni fusiona.
+
 ## Lo que la skill no hace
 
 Una skill orienta; no garantiza. El agente puede decidir que no se aplica, sobre todo si el encargo
-contradice la regla de forma explícita. Lo que hace que la regla se cumpla siempre son los tipos, las
-pruebas de arquitectura y la integración continua. Por eso este repositorio tiene las tres cosas, y
-la skill pide al agente que las añada donde falten.
+contradice la regla de forma explícita. Lo que hace que la regla se cumpla siempre son las otras
+capas: los tipos, la base de datos, las pruebas, la integración continua y la revisión obligatoria.
+Por eso la skill pide al agente que las añada donde falten. Este repositorio tiene los tipos, las
+pruebas, las pruebas de arquitectura, la integración continua y el `CODEOWNERS`. No tiene base de
+datos, porque guarda en memoria, y la revisión solo es obligatoria si se activa la protección de la
+rama `main` en GitHub.

@@ -1,7 +1,7 @@
 # Domain as Harness: evidence and setup for AI coding agents
 
 Read this when the user asks why types matter more with AI agents, wants evidence, or asks you to
-set up guardrails (AGENTS.md, CLAUDE.md, CI) for agent-written code.
+set up guardrails (AGENTS.md, CLAUDE.md, CI, CODEOWNERS) for agent-written code.
 
 ## Why this name
 
@@ -24,7 +24,8 @@ includes constraining agents. "Domain customs" is the practical rule for applyin
 SKILL.md).
 
 The name has a limit to state up front: an agent that can edit the domain types can remove the
-harness. That is why step 4 of the setup below protects the domain package itself.
+harness. That is why layer 5 below puts the domain package, and the checks that guard it, under
+required review.
 
 ## The argument in three sentences
 
@@ -85,8 +86,8 @@ Observations:
   stored as a valid permanent contract and the end date was silently dropped. The domain's
   `Contract.parse` would have rejected it. Prefer offering parse functions for combinations, and
   test that contradictory input is rejected rather than reinterpreted.
-- A separate blind evaluation of this skill (18 Sonnet runs, three cases) scored 45/45 with the
-  skill and 22/45 without it. On the misleading-request case, all three runs with the skill kept
+- A separate blind evaluation of this skill (18 Sonnet runs, three cases, with the version of
+  2026-11-16, before it covered the six layers) scored 45/45 with the skill and 22/45 without it. On the misleading-request case, all three runs with the skill kept
   validation and none of the three without it did. A guide helps, but it does not guarantee.
 - Cost: 12 of 36 typed imports stopped partway with data already saved. Types protected the domain but
   did not make the import robust; that still needs whole-input parsing, atomic batches and tests.
@@ -135,12 +136,16 @@ with two correct but different reference architectures.
     undermining the foundation. For example, we require Codex to parse data shapes at the
     boundary". The phrase links to King's "Parse, don't validate".
   - "When documentation falls short, we promote the rule into code".
-  - The post also says it writes linter error messages to inject remediation instructions into the
-    agent's context.
+  - "Because the lints are custom, we write the error messages to inject remediation instructions
+    into agent context."
+  - "give Codex a map, not a 1,000-page instruction manual"; "A short AGENTS.md (roughly 100
+    lines) is injected into context and serves primarily as a map" (opened 2026-11-20).
 - **Anthropic, "Best practices for Claude Code"**, <https://code.claude.com/docs/en/best-practices>:
   - "If something has to happen every time, make it a hook, a deny rule, or a managed setting.
     CLAUDE.md is for guidelines, and Claude is allowed to decide a guideline doesn't apply."
   - "Give Claude something it can run that comes back pass or fail."
+  - "Keep CLAUDE.md short": "every line in it takes a little of Claude's attention on every task,
+    whether it's relevant or not" (opened 2026-11-20).
 - **Birgitta Böckeler, "Harness engineering for coding agent users"** (martinfowler.com,
   2026-04-02), <https://martinfowler.com/articles/harness-engineering.html>:
   - "Agent = Model + Harness"
@@ -156,41 +161,103 @@ with two correct but different reference architectures.
   their instructions are well followed. This is consistent with variant R above: instruction files
   work through the agent's choices, not as guarantees. Version 1 of the paper made a stronger
   negative claim, so cite v3.
+- **Required review on each platform** (opened 2026-11-20):
+  - GitHub, "About protected branches" and "About code owners": "By default, the restrictions of
+    a branch protection rule don't apply to people with admin permissions to the repository";
+    "Do not allow bypassing the above settings"; `CODEOWNERS` can live in `.github/`, the root or
+    `docs/`.
+  - GitLab, "Code Owners" and "Merge request approvals": required approvals and Code Owners need
+    Premium or Ultimate; on Free, "These approvals are optional and don’t prevent merging without
+    approval".
+  - Azure DevOps, "Set and manage branch policies": "You can't push changes directly to branches
+    with required branch policies unless you have permissions to bypass branch policies."
+  - Bitbucket Cloud, "Set up and use code owners": code owners are added as suggested reviewers;
+    the page does not say their approval can be required.
 - **Foundations:** Cunningham, CHECKS (1994; *Whole Value*, *Exceptional Value*, *Deferred
   Validation*); Minsky, "Effective ML Revisited" (2011); Wlaschin, "Designing with types" (2013);
   King, "Parse, don't validate" (2019); Khorikov, "Always-valid domain model" (2017, 2021); Goetz,
   "Data Oriented Programming in Java" (InfoQ, 2022); critics: Palermo (2009), Fowler,
   "ContextualValidation" (2005), and Grimm, "Don't throw away invalid data" (2019).
 
-## Setting up a codebase so agents cannot corrupt the domain
+## The six layers in detail
 
-In order of strength:
+The layers are a defense hierarchy, not a scale of strength: each one covers what the others
+cannot reach. They are ordered by when they act and by how much they depend on someone's will.
+Layers 1 and 2 act at run time, always. Layers 3, 4 and 5 act when the code changes, and 5 also
+depends on someone looking. Layer 6 works only if the agent chooses to follow it. The scope is the
+domain and the repository: tool permissions, hooks and sandboxing are also part of a harness, but
+not of this skill.
 
-1. **Rules in types.** Domain types construct only through validating constructors or factories.
-   Named states are separate types, and actions take the type they need. This works even when the
-   agent ignores every instruction.
-2. **Mechanical checks in CI and in the agent's loop:**
-   - the compiler or type checker (tsc, mypy or pyright) runs on every change;
-   - tests prove that invalid input cannot become a domain object through each entry path,
-     including deserializers and ORMs;
-   - lint rules forbid the local smuggling routes (casts to domain types, `model_construct`,
-     `@ts-ignore`, reflection on domain packages, setters on domain types);
-   - architecture tests allow only the boundary package to call raw constructors or mappers.
-   Make the error messages say what to do instead ("use `Email.parse`"), because the agent reads
-   them as its next instruction.
-3. **Database constraints** for what types cannot express: uniqueness, foreign keys, NOT NULL,
-   check constraints.
-4. **Protection for the domain package itself.** Types only hold if nobody quietly removes their
-   checks, and an agent asked to "make it compile" might. Require review by the package's owners
-   (for example a CODEOWNERS entry) and add architecture tests that fail when a domain type gains
-   a setter, an empty constructor or a public mutable field. Run them in a CI gate the agent cannot
-   edit. In the build-and-maintain experiment, this gate, not the instruction file, kept the
-   customs alive when an agent was told to replace the domain types with a setter-based class.
-5. **The instruction file last, and short.** In AGENTS.md or CLAUDE.md, say where the domain types
-   live, that external data enters only through their parse functions, and that agents must not add
-   setters, empty constructors, casts or validation bypasses to domain types. Explain why in one
-   line. Point to the types and checks rather than restating every rule; the file is a table of
-   contents, not the enforcement.
+1. **Rules in types.**
+   - *Without it:* validity depends on remembering to call `isValid()`.
+   - *How:* domain types construct only through validating constructors or factories. Named states
+     are separate types, and actions take the type they need. This works even when the agent
+     ignores every instruction, for every object built through the constructor.
+   - *Where it ends:* `null`, shallow immutability, misread data (a valid enrollment with the wrong
+     number of credits), rules about other rows or later events, rules that change over time, and
+     cost. Above all, a type protects the data, not itself.
+2. **Database constraints.**
+   - *Without it:* rules that depend on other rows race (two concurrent sign-ups pass the same
+     uniqueness check), and writes that skip the domain go unchecked: a script, a migration, an
+     agent running SQL.
+   - *How:* unique and foreign keys, `NOT NULL` and `CHECK`, which the database enforces on every
+     write, wherever it comes from.
+   - *Where it ends:* only what the schema expresses. A `CHECK` that repeats the widest credit range
+     lets a direct `INSERT` of a home student with 12 credits through. Its errors don't tell the
+     user what to fix: the domain explains, the database guarantees. And it doesn't see the code.
+3. **Behavior tests.**
+   - *Without it:* correct types can still produce wrong results. An import that saves line by line
+     and fails on the fourth leaves the first three saved.
+   - *How:* test each entry path (API, imports, deserializers, ORM, drafts) with invalid input. Test
+     that a rejected change leaves nothing modified, comparing the data rather than entities whose
+     equality is by id. Test that a batch is all or nothing; with a real database, that needs an
+     integration test of the transaction.
+   - *Where it ends:* only the paths someone thought of, and it stays green while the domain loses
+     its defenses.
+4. **Architecture tests in CI.**
+   - *Without it:* "replace the enrollment with a class with an empty constructor and setters, for
+     the form" breaks no behavior test.
+   - *How:* the reference repository has five ArchUnit rules. No public instance method named
+     `set[A-Z].*`, no public no-argument constructor, only `final` fields, a domain that depends on
+     no framework and no other layer, and no calls to `setAccessible`. Each checks exactly what it
+     says. Write the failure messages as instructions ("add a `withX(...)` method that returns a new
+     object built with the validating constructor"), because the agent reads them as its next step.
+     CI runs layers 3 and 4; it is not a layer by itself.
+   - *Test the defense:* check that it fails when it should. In the reference repository,
+     `NoCompilaTest` adds a third variant to the sealed type and expects
+     `compiler.err.not.exhaustive.statement` from `javac`.
+   - *Where it ends:* only what someone coded, and an agent that can edit the test or the CI
+     configuration can dismantle it.
+5. **Required review.**
+   - *Without it:* the same agent that should respect everything above can edit it.
+   - *How:* three mechanisms that are often confused:
+     - code review is the practice;
+     - required review on pull requests is the mechanism: a protected branch, approvals and required
+       status checks;
+     - code owners decide who must approve.
+   - *Two details decide whether it protects:*
+     - Nobody bypasses it. On GitHub, by default, the restrictions of a branch protection rule don't
+       apply to admins unless "Do not allow bypassing the above settings" is enabled. On Azure
+       DevOps, whoever can bypass branch policies can push directly.
+     - The agent has its own identity: an account with minimal permissions that proposes changes on
+       a branch but does not approve, merge or bypass, and cannot touch branch rules, CI or
+       credentials.
+   - *What to protect:* `CODEOWNERS` covers the domain, the architecture tests, the build file
+     (excluding a test there dismantles layer 4 without touching it), the CI configuration, the
+     `CODEOWNERS` file itself, and the instruction files and skills.
+   - *Where it ends:* this protects against an agent with limited permissions that makes a mistake
+     or obeys a wrong request, not against one that controls the whole environment. The platform
+     forces an approval, not attention, so keep domain changes separate and small. In the
+     build-and-maintain experiment, this gate, not the instruction file, kept the customs alive.
+6. **The instruction file, short.**
+   - *Without it:* the agent learns the rules by running into them, and every collision costs a
+     round trip.
+   - *How:* a map, not a manual. Say what the code doesn't: where the domain types live, why they
+     exist, what not to touch and which checks guard it. Say that external data enters only through
+     the parse functions, and that "already validated" changes nothing. Keep one file for every
+     agent; CLAUDE.md can import AGENTS.md (`@AGENTS.md`).
+   - *Where it ends:* it guarantees nothing. It is the only layer that depends entirely on the
+     agent's decision, so it explains the other five and does not replace them.
 
 ## How to talk about this with the user
 

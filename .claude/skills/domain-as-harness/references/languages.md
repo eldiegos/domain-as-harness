@@ -46,6 +46,11 @@ public record Email(String value) {
   variants. A `switch` expression without `default` fails to compile when a variant is missing.
   Code compiled against an older hierarchy throws `MatchException` at run time if it meets a new
   variant, so recompile the consumers.
+- **Identity and collections:** a record's `equals` and `hashCode` compare every component. For an
+  entity, override them to compare the id, and in tests compare the data (the fields or
+  `toString()`), not `equals`. Copy lists in the compact constructor with `List.copyOf`, which also
+  rejects `null` elements; otherwise the record is immutable only on the surface.
+- **Architecture tests:** ArchUnit, run by the build in CI (see layer 4 in SKILL.md).
 - **Who can construct:** a public record's canonical constructor must be public (JLS §8.10.4), so a
   record cannot restrict who creates it. For proof types (`ConfirmedBooking`), use a `final class`
   with a private constructor and a static factory, or a package-private type.

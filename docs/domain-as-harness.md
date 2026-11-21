@@ -41,18 +41,20 @@ peticiones de [`casos.http`](casos.http).
 ## El harness alrededor del dominio
 
 1. **Las reglas, en tipos:** el paquete `dominio`.
-2. **Pruebas de que lo inválido no entra por ningún camino:** altas, importación, cambios y
+2. **Lo que los tipos no expresan, en el almacén:** el documento único. Con una base de datos,
+   serían sus restricciones (`UNIQUE`, claves ajenas, `CHECK`).
+3. **Pruebas de que lo inválido no entra por ningún camino:** altas, importación, cambios y
    borradores, en `EnrollmentServiceTest`, y la frontera HTTP en `EnrollmentApiTest`. Lo que el
    compilador impide, como emitir el carné sin una matrícula confirmada, en `NoCompilaTest`.
-3. **Reglas automáticas contra los atajos:** `ArquitecturaTest` rechaza el cambio si una clase del
+4. **Reglas automáticas contra los atajos:** `ArquitecturaTest` rechaza el cambio si una clase del
    dominio gana *setters*, un constructor público vacío, campos mutables o una dependencia de un
    *framework*, o si alguien usa la reflexión para saltarse un constructor. Sus mensajes dicen qué
    usar en su lugar: un agente lee ese error como su siguiente instrucción.
-4. **Lo que los tipos no expresan, en el almacén:** el documento único.
 5. **Protección del propio dominio:** la integración continua (`.github/workflows/ci.yml`) ejecuta
    todo con cada cambio, y `.github/CODEOWNERS` pide la revisión de los propietarios para el dominio,
-   las pruebas de arquitectura y la *skill*. Para que sea obligatorio, activa en GitHub la protección
-   de la rama `main`.
+   las pruebas de arquitectura, el `pom.xml`, la integración continua, el `AGENTS.md` y la *skill*.
+   Para que sea obligatorio, activa en GitHub la protección de la rama `main`, con las comprobaciones
+   obligatorias y sin excepciones para los administradores.
 6. **El `AGENTS.md`, al final y corto:** dónde están los tipos, por qué existen y qué no se toca.
 
 ## Prueba a romperlo
