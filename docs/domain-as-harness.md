@@ -61,7 +61,8 @@ peticiones de [`casos.http`](casos.http).
    continua, el `AGENTS.md` y la *skill*. El perímetro no es el paquete del dominio: es todo camino
    por el que sus datos entran, se guardan o salen.
    Para que sea obligatorio, activa en GitHub la protección de la rama `main`, con las comprobaciones
-   obligatorias y sin excepciones para los administradores.
+   obligatorias, sin excepciones para los administradores y con aprobaciones que caducan cuando llega
+   un *commit* nuevo.
 6. **El `AGENTS.md`, al final y corto:** dónde están los tipos, por qué existen y qué no se toca.
 
 ## Prueba a romperlo

@@ -273,10 +273,14 @@ not of this skill.
      - required review on pull requests is the mechanism: a protected branch, approvals and required
        status checks;
      - code owners decide who must approve.
-   - *Two details decide whether it protects:*
+   - *Three details decide whether it protects:*
      - Nobody bypasses it. On GitHub, by default, the restrictions of a branch protection rule don't
        apply to admins unless "Do not allow bypassing the above settings" is enabled. On Azure
        DevOps, whoever can bypass branch policies can push directly.
+     - Approvals expire. On GitHub, by default, a commit pushed after an approval does not dismiss
+       it, unless "Dismiss stale pull request approvals when new commits are pushed" is enabled;
+       "Require approval of the most recent reviewable push" makes someone else approve the last
+       push.
      - The agent has its own identity: an account with minimal permissions that proposes changes on
        a branch but does not approve, merge or bypass, and cannot touch branch rules, CI or
        credentials.

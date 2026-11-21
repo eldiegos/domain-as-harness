@@ -50,8 +50,9 @@ crea pedidos».
 
 Si le pides un proyecto o un módulo nuevo, monta las seis capas desde el primer cambio. Lo que vive
 fuera del repositorio te lo deja escrito, porque no debe cambiarlo él: proteger la rama principal
-con aprobación y comprobaciones obligatorias, sin excepciones para los administradores, y darle al
-agente una cuenta propia que no aprueba ni fusiona.
+con aprobación y comprobaciones obligatorias, sin excepciones para los administradores y con
+aprobaciones que caducan con cada *commit* nuevo, y darle al agente una cuenta propia que no aprueba
+ni fusiona.
 
 ## Lo que la skill no hace
 

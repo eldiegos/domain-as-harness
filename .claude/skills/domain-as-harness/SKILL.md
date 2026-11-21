@@ -210,6 +210,9 @@ the user in your reply:
 
 - Protect the main branch: changes only through pull requests, with at least one approval, a review
   from code owners, and the CI job (name it) as a required status check.
+- Make approvals expire. On GitHub, by default, a commit pushed after an approval does not dismiss
+  it; enable "Dismiss stale pull request approvals when new commits are pushed" and "Require
+  approval of the most recent reviewable push".
 - Apply the protection to admins too. On GitHub it does not apply to them by default; enable "Do not
   allow bypassing the above settings". On Azure DevOps, limit who has the bypass permissions.
 - Give the agent its own account with minimal permissions: it pushes branches and opens pull

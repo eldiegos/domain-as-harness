@@ -1,8 +1,9 @@
 # Protección del propio dominio: los cambios en el dominio, en los caminos por los que sus datos se
 # guardan y se devuelven (el almacén y la vista), en las pruebas de arquitectura y de ida y vuelta y en
 # la integración continua necesitan la revisión de sus propietarios. Para que sea obligatoria hay que
-# activar en GitHub la protección de la rama main con «Require review from Code Owners» y
-# «Require status checks to pass» (el trabajo ci/verify).
+# activar en GitHub la protección de la rama main con «Require review from Code Owners»,
+# «Require status checks to pass» (el trabajo ci/verify), «Dismiss stale pull request approvals when
+# new commits are pushed» y «Require approval of the most recent reviewable push».
 
 /src/main/java/io/github/eldiegos/domainasharness/dominio/       @eldiegos
 /src/main/java/io/github/eldiegos/domainasharness/almacen/EnrollmentStore.java  @eldiegos
