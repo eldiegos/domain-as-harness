@@ -163,10 +163,11 @@ A change is finished when the layers it touches are up to date. In the same chan
 - **Domain package, type or a new smuggling route → architecture tests (layer 4).** Check that the
   rules cover the new code: no public methods named `setX`, no public no-argument constructors,
   only `final` fields, a domain that depends on no framework and no other layer, and no reflection
-  that skips a constructor (`setAccessible`). Each rule checks exactly what it says and no more, so
-  add one when you meet a route it misses. Write each failure message as the next agent's
-  instruction: what to use instead. And test that a defense fails when it should, for example a test
-  that compiles forbidden code and expects the compiler error.
+  that opens private constructors or fields (`setAccessible`, `trySetAccessible`): it would create a
+  proof type without its factory, or change a field after validation. Each rule checks exactly what
+  it says and no more, so add one when you meet a route it misses. Write each failure message as the
+  next agent's instruction: what to use instead. And test that a defense fails when it should, for
+  example a test that compiles forbidden code and expects the compiler error.
 - **Protected paths → code owners (layer 5).** `CODEOWNERS`, or the platform's required reviewers
   by path, must cover the domain package, the architecture tests, the build file (excluding one test
   there dismantles layer 4), the CI configuration, the `CODEOWNERS` file itself, and the instruction
