@@ -50,7 +50,8 @@ peticiones de [`casos.http`](casos.http).
    como matrícula vuelve a pasar la aduana con los mismos datos.
 4. **Reglas automáticas contra los atajos:** `ArquitecturaTest` rechaza el cambio si una clase del
    dominio gana *setters*, un constructor público vacío, campos mutables o una dependencia de un
-   *framework*; si alguien usa la reflexión o `Unsafe` para abrir un constructor o un campo
+   *framework*; si alguien usa la reflexión, `Unsafe` o los envoltorios de Spring (`ReflectionUtils`,
+   `BeanUtils.instantiateClass`, Objenesis) para abrir un constructor o un campo
    privados; si la API devuelve como matrícula algo que no sale de una `Enrollment`, o si la API o
    los casos de uso guardan datos fuera del almacén. También falla si un `archunit_ignore_patterns.txt`
    silencia las reglas. Sus mensajes dicen qué usar en su lugar: un agente lee ese error como su
@@ -58,7 +59,7 @@ peticiones de [`casos.http`](casos.http).
 5. **Protección del propio dominio:** la integración continua (`.github/workflows/ci.yml`) ejecuta
    todo con cada cambio, y `.github/CODEOWNERS` pide la revisión de los propietarios para el dominio,
    los caminos por los que sus datos se guardan y se devuelven (`EnrollmentStore` y
-   `EnrollmentView`), las pruebas de arquitectura y de ida y vuelta, la compilación (`pom.xml`, `.mvn/` y `mvnw`), la integración
+   `EnrollmentView`), las pruebas de arquitectura, de ida y vuelta y de comportamiento, la compilación (`pom.xml`, `.mvn/` y `mvnw`), la integración
    continua, el `AGENTS.md` y la *skill*. El perímetro no es el paquete del dominio: es todo camino
    por el que sus datos entran, se guardan o salen.
    Para que sea obligatorio, activa en GitHub la protección de la rama `main`, con las comprobaciones

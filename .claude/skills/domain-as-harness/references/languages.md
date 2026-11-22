@@ -61,7 +61,9 @@ public record Email(String value) {
   - Reflection on final fields: `Field.set` refuses record fields; ordinary classes allow it, and
     JDK 26+ only warns. `sun.misc.Unsafe` cannot write a record's fields either, but it can write a
     class's; on the class path, `MethodHandles.privateLookupIn` opens a class's private constructor
-    without `setAccessible`. Ban all of them in the architecture tests, over all compiled code.
+    without `setAccessible`. Framework wrappers do the same without your code naming any of them:
+    in Spring, `ReflectionUtils.makeAccessible`, `BeanUtils.instantiateClass`, `DirectFieldAccessor`,
+    Objenesis and CGLIB. Ban all of them in the architecture tests, over all compiled code.
   - Lombok `@Data` / `@Setter` on domain types.
   - Builders that allow `build()` with missing fields.
 - **Persistence:** JPA entities need a public or protected no-arg constructor and cannot be records.

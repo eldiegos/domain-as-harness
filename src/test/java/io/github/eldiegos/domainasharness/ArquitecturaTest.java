@@ -20,6 +20,7 @@ import java.util.Map;
 
 import static com.tngtech.archunit.base.DescribedPredicate.describe;
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameMatching;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
@@ -32,7 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * La parte del harness que protege al propio dominio y los caminos que llegan a él. Se ejecuta en cada
  * {@code ./mvnw verify} y en la integración continua, y rechaza el cambio si una clase del paquete
  * {@code dominio} gana setters, un constructor público vacío, campos mutables o dependencias de un
- * framework; si alguien usa la reflexión o {@code Unsafe} para abrir un constructor o un campo privados;
+ * framework; si alguien usa la reflexión, {@code Unsafe} o los envoltorios de Spring ({@code ReflectionUtils},
+ * {@code BeanUtils.instantiateClass}, Objenesis) para abrir un constructor o un campo privados;
  * o si la API devuelve como matrícula algo que no salió de una {@link Enrollment} o guarda datos fuera
  * del almacén. También falla si un {@code archunit_ignore_patterns.txt} en el classpath silencia estas
  * reglas. Nadie desmonta la aduana sin que se note.
@@ -43,6 +45,19 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class ArquitecturaTest {
 
 	private static final String DOMINIO = "..dominio..";
+
+	/**
+	 * Lo que abre constructores y campos privados sin llamar a {@code setAccessible} desde el código propio:
+	 * las clases internas del JDK y los envoltorios de Spring, que ya está en el classpath. Es la lista de lo
+	 * conocido, no una garantía: otra biblioteca que haga lo mismo solo la vería la revisión.
+	 */
+	private static final DescribedPredicate<JavaClass> ABREN_LO_PRIVADO = resideInAnyPackage(
+			"sun.misc..", "sun.reflect..", "jdk.internal..",
+			"org.objenesis..", "org.springframework.objenesis..", "org.springframework.cglib..")
+		.or(nameMatching("org\\.springframework\\.(util\\.ReflectionUtils"
+			+ "|test\\.util\\.ReflectionTestUtils|beans\\.DirectFieldAccessor)"))
+		.as("open private constructors or fields (JDK internals, Objenesis, CGLIB or Spring's"
+			+ " ReflectionUtils, ReflectionTestUtils and DirectFieldAccessor)");
 
 	/** Todo lo que se compila de src/main, en cualquier paquete. */
 	private static final JavaClasses APLICACION = new ClassFileImporter()
@@ -104,13 +119,16 @@ class ArquitecturaTest {
 	}
 
 	@Test
-	@DisplayName("Nadie usa la reflexión ni Unsafe para abrir un constructor o un campo privados")
+	@DisplayName("Nadie usa la reflexión, Unsafe ni los envoltorios de Spring para abrir un constructor o un campo privados")
 	void sinReflexion() {
 		ArchRule rule = noClasses()
-			.should().callMethodWhere(target(nameMatching("setAccessible|trySetAccessible|privateLookupIn")))
-			.orShould().dependOnClassesThat().resideInAnyPackage("sun.misc..", "sun.reflect..", "jdk.internal..")
-			.because("la reflexión, MethodHandles.privateLookupIn y Unsafe abren constructores y campos privados"
-				+ " y saltan la aduana. Construye los objetos con su constructor, su fábrica o su función parse");
+			.should().callMethodWhere(target(nameMatching("setAccessible|trySetAccessible|privateLookupIn"
+				+ "|makeAccessible|accessibleConstructor|instantiateClass|forDirectFieldAccess")))
+			.orShould().dependOnClassesThat(ABREN_LO_PRIVADO)
+			.because("la reflexión, MethodHandles.privateLookupIn, Unsafe y los envoltorios de Spring"
+				+ " (ReflectionUtils, BeanUtils.instantiateClass, DirectFieldAccessor, Objenesis) abren"
+				+ " constructores y campos privados y saltan la aduana. Construye los objetos con su"
+				+ " constructor, su fábrica o su función parse");
 		rule.check(APLICACION);
 	}
 

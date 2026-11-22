@@ -253,7 +253,9 @@ not of this skill.
      - no public instance method named `set[A-Z].*`, no public no-argument constructor and only
        `final` fields in the domain;
      - a domain that depends on no framework and nothing else in the application;
-     - no `setAccessible`, `trySetAccessible`, `MethodHandles.privateLookupIn` or `sun.misc`, which
+     - no `setAccessible`, `trySetAccessible`, `MethodHandles.privateLookupIn` or `sun.misc`, and no
+       framework wrapper that calls them for you (Spring's `ReflectionUtils`,
+       `BeanUtils.instantiateClass`, `DirectFieldAccessor`, Objenesis, CGLIB), which
        open private constructors and fields;
      - the read model (`EnrollmentView`) is built only by `EnrollmentView.of(long, Enrollment)`;
      - controllers and use cases keep no collections: data lives only in the store.
@@ -289,8 +291,8 @@ not of this skill.
        a branch but does not approve, merge or bypass, and cannot touch branch rules, CI or
        credentials.
    - *What to protect:* the perimeter is every path through which domain data enters, is stored or
-     leaves. `CODEOWNERS` covers the domain, the store and the read model, the architecture and
-     round-trip tests, the build configuration and its wrapper (in Maven, `pom.xml`, `.mvn/` and
+     leaves. `CODEOWNERS` covers the domain, the store and the read model, the architecture,
+     round-trip and behavior tests, the build configuration and its wrapper (in Maven, `pom.xml`, `.mvn/` and
      `mvnw`: a `-DskipTests` in `.mvn/maven.config` dismantles layer 4 without touching the tests or
      the `pom.xml`), the CI configuration, the `CODEOWNERS` file itself, and the instruction files
      and skills.

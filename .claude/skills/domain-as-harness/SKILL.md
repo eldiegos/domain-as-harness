@@ -173,7 +173,8 @@ A change is finished when the layers it touches are up to date. In the same chan
   rules cover the new code: no public methods named `setX`, no public no-argument constructors,
   only `final` fields, a domain that depends on no framework and on nothing else in the
   application, and no reflection that opens private constructors or fields (`setAccessible`,
-  `trySetAccessible`, `MethodHandles.privateLookupIn`, `sun.misc.Unsafe`): it would create a proof
+  `trySetAccessible`, `MethodHandles.privateLookupIn`, `sun.misc.Unsafe`, or a framework wrapper
+  around them such as Spring's `ReflectionUtils` and `BeanUtils.instantiateClass`): it would create a proof
   type without its factory, or change a field after validation. Scan all compiled code, not only the
   application's root package. Add rules on the data flow around the domain: what the system returns
   as a domain object is built only from a domain type, and data is stored only in the store, as
@@ -186,10 +187,10 @@ A change is finished when the layers it touches are up to date. In the same chan
   stored or leaves, not the domain package alone: an agent that cannot touch the domain can still
   add a store next to it. So cover the domain package; the code that stores its data and holds what
   the types cannot (the store or repository, the migrations); the mapping that returns it (the read
-  model); the architecture and round-trip tests; the build configuration and its wrapper (`pom.xml`,
+  model); the architecture, round-trip and behavior tests; the build configuration and its wrapper (`pom.xml`,
   `.mvn/` and `mvnw` in Maven: excluding a test or adding `-DskipTests` there dismantles layer 4);
   the CI configuration; the `CODEOWNERS` file itself; and the instruction files and skills. With
-  ArchUnit, an `archunit_ignore_patterns.txt` anywhere on the classpath silences the rules: test that
+  ArchUnit, an `archunit_ignore_patterns.txt` at the root of the classpath silences the rules: test that
   none exists.
 - **New concept or convention → the map (layer 6).** One or two lines in AGENTS.md: where it lives,
   why, what not to touch and which check guards it. Don't restate rules the code already enforces.

@@ -1,6 +1,7 @@
 # Protección del propio dominio: los cambios en el dominio, en los caminos por los que sus datos se
-# guardan y se devuelven (el almacén y la vista), en las pruebas de arquitectura y de ida y vuelta y en
-# la integración continua necesitan la revisión de sus propietarios. Para que sea obligatoria hay que
+# guardan y se devuelven (el almacén y la vista), en las pruebas que lo sostienen (las de arquitectura,
+# la de ida y vuelta y las de comportamiento del dominio), en la compilación y en la integración
+# continua necesitan la revisión de sus propietarios. Para que sea obligatoria hay que
 # activar en GitHub la protección de la rama main con «Require review from Code Owners»,
 # «Require status checks to pass» (el trabajo ci/verify), «Dismiss stale pull request approvals when
 # new commits are pushed», «Require approval of the most recent reviewable push» y «Do not allow
@@ -13,6 +14,9 @@
 /src/test/java/io/github/eldiegos/domainasharness/ArquitecturaTest.java  @eldiegos
 /src/test/java/io/github/eldiegos/domainasharness/NoCompilaTest.java     @eldiegos
 /src/test/java/io/github/eldiegos/domainasharness/IdaYVueltaTest.java    @eldiegos
+/src/test/java/io/github/eldiegos/domainasharness/aplicacion/EnrollmentServiceTest.java  @eldiegos
+/src/test/java/io/github/eldiegos/domainasharness/api/EnrollmentApiTest.java  @eldiegos
+/src/test/java/io/github/eldiegos/domainasharness/dominio/               @eldiegos
 /pom.xml                                                         @eldiegos
 /.mvn/                                                           @eldiegos
 /mvnw                                                            @eldiegos
