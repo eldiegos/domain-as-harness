@@ -258,6 +258,10 @@ not of this skill.
      - the read model (`EnrollmentView`) is built only by `EnrollmentView.of(long, Enrollment)`;
      - controllers and use cases keep no collections: data lives only in the store.
 
+     A plain test next to them fails if an `archunit_ignore_patterns.txt` is on the classpath:
+     ArchUnit ignores every violation that matches its patterns, so one line (`.*`) in any resources
+     folder silences all the rules.
+
      Each checks exactly what it says. Write the failure messages as instructions ("add a `withX(...)` method that returns a new
      object built with the validating constructor"), because the agent reads them as its next step.
      CI runs layers 3 and 4; it is not a layer by itself.

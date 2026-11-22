@@ -26,6 +26,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noConstructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * La parte del harness que protege al propio dominio y los caminos que llegan a él. Se ejecuta en cada
@@ -33,7 +34,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
  * {@code dominio} gana setters, un constructor público vacío, campos mutables o dependencias de un
  * framework; si alguien usa la reflexión o {@code Unsafe} para abrir un constructor o un campo privados;
  * o si la API devuelve como matrícula algo que no salió de una {@link Enrollment} o guarda datos fuera
- * del almacén. Nadie desmonta la aduana sin que se note.
+ * del almacén. También falla si un {@code archunit_ignore_patterns.txt} en el classpath silencia estas
+ * reglas. Nadie desmonta la aduana sin que se note.
  *
  * <p>Los mensajes dicen qué usar en su lugar: un agente de IA lee ese error como su siguiente instrucción.
  */
@@ -82,8 +84,10 @@ class ArquitecturaTest {
 			.that().areDeclaredInClassesThat().resideInAPackage(DOMINIO)
 			.and().areNotStatic()
 			.should().beFinal()
-			.because("un campo que se puede reasignar deja que el objeto quede a medias. Usa records o campos "
-				+ "final y crea un objeto nuevo para cada cambio");
+			.because("un campo que se puede reasignar deja "
+				+ "que el objeto quede a medias. Usa records o "
+				+ "campos final y crea un objeto nuevo para "
+				+ "cada cambio");
 		rule.check(APLICACION);
 	}
 
@@ -141,6 +145,15 @@ class ArquitecturaTest {
 				+ " la aduana y la API puede devolverlo. Guarda los datos en el paquete almacen, como tipos del"
 				+ " dominio");
 		rule.check(APLICACION);
+	}
+
+	@Test
+	@DisplayName("Ninguna regla se silencia con un fichero de excepciones")
+	void sinExcepcionesOcultas() {
+		assertNull(ArquitecturaTest.class.getClassLoader().getResource("archunit_ignore_patterns.txt"),
+			"archunit_ignore_patterns.txt hace que ArchUnit ignore las infracciones de estas reglas. Corrige el"
+				+ " código que las incumple; si una regla está mal, cámbiala en esta clase, que revisan sus"
+				+ " propietarios");
 	}
 
 	private static boolean esUnaColeccion(JavaClass c) {

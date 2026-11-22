@@ -188,7 +188,9 @@ A change is finished when the layers it touches are up to date. In the same chan
   the types cannot (the store or repository, the migrations); the mapping that returns it (the read
   model); the architecture and round-trip tests; the build configuration and its wrapper (`pom.xml`,
   `.mvn/` and `mvnw` in Maven: excluding a test or adding `-DskipTests` there dismantles layer 4);
-  the CI configuration; the `CODEOWNERS` file itself; and the instruction files and skills.
+  the CI configuration; the `CODEOWNERS` file itself; and the instruction files and skills. With
+  ArchUnit, an `archunit_ignore_patterns.txt` anywhere on the classpath silences the rules: test that
+  none exists.
 - **New concept or convention → the map (layer 6).** One or two lines in AGENTS.md: where it lives,
   why, what not to touch and which check guards it. Don't restate rules the code already enforces.
 
@@ -257,10 +259,10 @@ the person reading your summary.
   `@ts-ignore`, `model_construct`), or reaching in with reflection. A type that blocks you is the
   harness doing its job: use the parse path, add a named state, or ask.
 - **Never weaken a check to get a change through.** Don't delete, skip or disable a test
-  (`@Disabled`, `.skip`, `-DskipTests`), exclude it in the build file, loosen an architecture rule
-  or widen its exceptions, or edit the CI workflow, `CODEOWNERS` or the instruction files to make a
-  change pass. A failing architecture test is the harness doing its job: its message says what to
-  use instead.
+  (`@Disabled`, `.skip`, `-DskipTests`, an `archunit_ignore_patterns.txt`), exclude it in the build
+  file, loosen an architecture rule or widen its exceptions, or edit the CI workflow, `CODEOWNERS`
+  or the instruction files to make a change pass. A failing architecture test is the harness doing
+  its job: its message says what to use instead.
 - **When the request itself removes a layer** ("replace the domain types with one class with an
   empty constructor and setters, for the form"), say plainly which guarantee it removes and offer
   the alternative that keeps it (a form DTO at the edge, mapped once). If the user still wants it,

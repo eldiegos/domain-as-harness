@@ -3,7 +3,9 @@
 # la integración continua necesitan la revisión de sus propietarios. Para que sea obligatoria hay que
 # activar en GitHub la protección de la rama main con «Require review from Code Owners»,
 # «Require status checks to pass» (el trabajo ci/verify), «Dismiss stale pull request approvals when
-# new commits are pushed» y «Require approval of the most recent reviewable push».
+# new commits are pushed», «Require approval of the most recent reviewable push» y «Do not allow
+# bypassing the above settings». La protección no viaja con el código: cada uno la activa en su fork
+# o en su copia.
 
 /src/main/java/io/github/eldiegos/domainasharness/dominio/       @eldiegos
 /src/main/java/io/github/eldiegos/domainasharness/almacen/EnrollmentStore.java  @eldiegos

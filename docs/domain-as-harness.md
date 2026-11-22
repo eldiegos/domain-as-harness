@@ -43,7 +43,7 @@ peticiones de [`casos.http`](casos.http).
 1. **Las reglas, en tipos:** el paquete `dominio`.
 2. **Lo que los tipos no expresan, en el almacén:** el documento único. Con una base de datos,
    serían sus restricciones (`UNIQUE`, claves ajenas, `CHECK`).
-3. **Pruebas de que lo inválido no entra por ningún camino:** altas, importación, cambios y
+3. **Pruebas de que lo inválido no entra por los caminos conocidos:** altas, importación, cambios y
    borradores, en `EnrollmentServiceTest`, y la frontera HTTP en `EnrollmentApiTest`. Lo que el
    compilador impide, como emitir el carné sin una matrícula confirmada, en `NoCompilaTest`. Y la
    ida y vuelta, en `IdaYVueltaTest`: los datos entran por todos los caminos de la API y lo que sale
@@ -52,8 +52,9 @@ peticiones de [`casos.http`](casos.http).
    dominio gana *setters*, un constructor público vacío, campos mutables o una dependencia de un
    *framework*; si alguien usa la reflexión o `Unsafe` para abrir un constructor o un campo
    privados; si la API devuelve como matrícula algo que no sale de una `Enrollment`, o si la API o
-   los casos de uso guardan datos fuera del almacén. Sus mensajes dicen qué usar en su lugar: un
-   agente lee ese error como su siguiente instrucción.
+   los casos de uso guardan datos fuera del almacén. También falla si un `archunit_ignore_patterns.txt`
+   silencia las reglas. Sus mensajes dicen qué usar en su lugar: un agente lee ese error como su
+   siguiente instrucción.
 5. **Protección del propio dominio:** la integración continua (`.github/workflows/ci.yml`) ejecuta
    todo con cada cambio, y `.github/CODEOWNERS` pide la revisión de los propietarios para el dominio,
    los caminos por los que sus datos se guardan y se devuelven (`EnrollmentStore` y

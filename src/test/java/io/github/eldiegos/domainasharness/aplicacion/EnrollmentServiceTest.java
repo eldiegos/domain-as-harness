@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/** Lo inválido no entra por ningún camino: altas, importación, cambios y borradores. */
-@DisplayName("Casos de uso: lo inválido no entra por ningún camino")
+/** Lo inválido no entra por los caminos conocidos: altas, importación, cambios y borradores. */
+@DisplayName("Casos de uso: lo inválido no entra por los caminos conocidos")
 class EnrollmentServiceTest {
 
 	/** Un identificador cualquiera para comprobar la frontera sin pasar por el almacén. */

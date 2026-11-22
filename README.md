@@ -104,7 +104,7 @@ src/test/java/io/github/eldiegos/domainasharness/
   NoCompilaTest.java                 lo que no compila: el compilador hace cumplir las reglas
   dominio/EmailTest                  el puesto fronterizo
   dominio/admision/...Test           el depósito, en pequeño: la solicitud de admisión
-  aplicacion/EnrollmentServiceTest   lo inválido no entra por ningún camino
+  aplicacion/EnrollmentServiceTest   lo inválido no entra por los caminos conocidos
   api/EnrollmentApiTest              la frontera HTTP
 .claude/skills/domain-as-harness/    la skill para agentes de IA
 docs/                                documentación y peticiones de ejemplo
